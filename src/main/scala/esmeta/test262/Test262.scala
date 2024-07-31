@@ -86,12 +86,15 @@ case class Test262(
         case NotSupported(reasons) =>
           summary.notSupported.add(name, reasons)
         case _: TimeoutException =>
-          if (log) pw.println(s"[TIMEOUT] $name")
+          if (log)
+            pw.println(s"[TIMEOUT] $name")
+            pw.flush
           summary.timeout.add(name)
         case e: Throwable =>
           if (log)
             pw.println(s"[FAIL   ] $name")
             pw.println(e.getStackTrace.mkString(LINE_SEP))
+            pw.flush
           summary.fail.add(name, getMessage(e))
       else throw e,
     verbose = useProgress,
@@ -125,6 +128,7 @@ case class Test262(
     val progressBar = getProgressBar(
       name = "eval",
       targetTests = targetTests,
+      log = log,
       pw = logPW,
       removed = removed,
       useProgress = useProgress,
