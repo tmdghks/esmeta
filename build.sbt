@@ -3,7 +3,7 @@ import sbtassembly.AssemblyPlugin.defaultUniversalScript
 // ESMeta version
 // NOTE: please update VERSION together in top-level package.scala
 // NOTE: please update version info in the README.md file
-ThisBuild / version := "0.4.1"
+ThisBuild / version := "0.4.3"
 
 // Scala version
 ThisBuild / scalaVersion := "3.3.3"
@@ -132,6 +132,7 @@ lazy val assemblyJavaOpts = Seq(
   "-Xms1g",
   "-Xmx3g",
   "-XX:ReservedCodeCacheSize=512m",
+  "-Xss4m",
   "-Dfile.encoding=utf8",
 )
 
