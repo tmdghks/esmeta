@@ -1,6 +1,6 @@
 package esmeta.util
 
-import java.io.{Reader, File, PrintWriter}
+import java.io.{BufferedWriter, Reader, File, PrintWriter}
 import java.nio.file.{Files, StandardCopyOption, Paths}
 import java.util.concurrent.{Executors, ExecutorService}
 import esmeta.*
@@ -101,9 +101,20 @@ object SystemUtils {
     filename: String,
     noSpace: Boolean = false,
     silent: Boolean = false,
+    useStream: Boolean = false,
   )(using Encoder[T]): Unit =
-    dumpJson(data, filename, noSpace)
-    if (!silent) println(s"- Dumped $name into `$filename` in a JSON format.")
+    if (useStream)
+      // handle super big data
+      val json = data.asJson
+      val writer = new BufferedWriter(new PrintWriter(new File(filename)))
+      try
+        if (noSpace) writer.write(json.noSpaces)
+        else writer.write(json.spaces2)
+      finally
+        writer.close()
+    else
+      dumpJson(data, filename, noSpace)
+      if (!silent) println(s"- Dumped $name into `$filename` in a JSON format.")
 
   /** get first filename */
   def getFirstFilename(cmdConfig: CommandConfig, msg: String): String =
