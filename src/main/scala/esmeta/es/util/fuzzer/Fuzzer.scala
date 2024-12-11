@@ -382,6 +382,7 @@ class Fuzzer(
     s"$logDir/mutation-stat.tsv",
   )
 
+  def getElapsed: Long = elapsed
 }
 
 object Fuzzer {

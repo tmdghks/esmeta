@@ -361,10 +361,13 @@ class MinifyFuzzer(
         dumpFile(injected, s"$dirpath/injected.js")
         dumpFile(delta, s"$dirpath/delta.js")
         test.getReason.map(dumpFile(_, s"$dirpath/reason"))
+        val elapsed = fuzzer.getElapsed // dump bug found time to info file
         dumpJson(
           Json.obj(
             "iter" -> Json.fromInt(iter),
             "covered" -> Json.fromBoolean(covered),
+            "found-time(ms)" -> Json.fromLong(elapsed),
+            "found-time" -> Json.fromString(Time(elapsed).simpleString)
           ),
           s"$dirpath/info",
         )
