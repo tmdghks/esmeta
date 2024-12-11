@@ -367,7 +367,7 @@ class MinifyFuzzer(
             "iter" -> Json.fromInt(iter),
             "covered" -> Json.fromBoolean(covered),
             "found-time(ms)" -> Json.fromLong(elapsed),
-            "found-time" -> Json.fromString(Time(elapsed).simpleString)
+            "found-time" -> Json.fromString(Time(elapsed).simpleString),
           ),
           s"$dirpath/info",
         )
