@@ -19,6 +19,7 @@ import scala.collection.parallel.CollectionConverters._
 import esmeta.util.SystemUtils.*
 import esmeta.es.util.ValidityChecker
 import esmeta.es.util.fuzzer.MinifyFuzzer
+import esmeta.ir.Op
 
 case object MinifyFuzz extends Phase[CFG, Coverage] {
   val name = "minify-fuzz"
@@ -47,6 +48,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       demCrit = config.demCrit,
       fsMinTouch = config.fsMinTouch,
       keepBugs = config.keepBugs,
+      minifyCmd = config.minifier,
     )
 
     for (dirname <- config.out) cov.dumpToWithDetail(dirname)
@@ -133,6 +135,11 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       BoolOption(c => c.keepBugs = true),
       "keep the bugs in the generated programs (default: false).",
     ),
+    (
+      "minifier",
+      StrOption((c, s) => c.minifier = Some(s)),
+      "set the minifier to use (default: swc).",
+    ),
   )
   case class Config(
     var log: Boolean = false,
@@ -150,5 +157,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var demCrit: Int = 2,
     var fsMinTouch: Int = 10,
     var keepBugs: Boolean = false,
+    var minifier: Option[String] = None,
   )
 }

@@ -13,6 +13,8 @@ object Minifier {
   val minifyCmd = Map(
     "swc" -> "minify-runner -v swc@1.4.6",
     "checkDiffSwc" -> "minify-runner -v swc@1.4.6 -d",
+    "checkDiffTerser" -> "minify-runner -v terser@5.7.2 -d",
+    "checkDiffBabel" -> "minify-runner -v babel@0.5.0 -d",
   )
 
   lazy val useSwc: Boolean = minifySwc(";").isSuccess
@@ -48,8 +50,19 @@ object Minifier {
   def minifySwc(src: String): Try[String] = execScript(minifyCmd("swc"), src)
 
   def checkMinifyDiffSwc(code: String): Boolean =
+    checkMinifyDiff(code, Some("swc"))
+
+  def checkMinifyDiff(code: String, cmd: Option[String]): Boolean =
+    val minifierCode = cmd match
+      case Some("swc") | Some("Swc")       => "checkDiffSwc"
+      case Some("terser") | Some("Terser") => "checkDiffTerser"
+      case Some("babel") | Some("Babel")   => "checkDiffBabel"
+      case None =>
+        println("No minifier specified. Using SWC as default.")
+        "checkDiffSwc"
+      case _ => throw new Exception("Invalid minifier specified.")
     try {
-      val result = execScript(minifyCmd("checkDiffSwc"), code)
+      val result = execScript(minifyCmd(minifierCode), code)
       result match {
         case Success(minifiedAndDiff) =>
           val diffResult = minifiedAndDiff.split(LINE_SEP).last

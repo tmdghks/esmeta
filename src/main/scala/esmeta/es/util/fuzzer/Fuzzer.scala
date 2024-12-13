@@ -35,6 +35,7 @@ class Fuzzer(
   proCrit: Int = 2,
   demCrit: Int = 2,
   fsMinTouch: Int = 10,
+  minifyCmd: Option[String] = None,
 ) {
   import Fuzzer.*
 
@@ -226,6 +227,7 @@ class Fuzzer(
       proCrit = proCrit,
       demCrit = demCrit,
       fsMinTouch = fsMinTouch,
+      minifyCmd = minifyCmd,
     )
 
   /** target selector */

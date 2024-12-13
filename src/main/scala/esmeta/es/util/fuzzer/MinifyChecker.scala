@@ -6,7 +6,7 @@ import esmeta.parser.ESParser
 import esmeta.spec.Spec
 import akka.http.scaladsl.model.headers.CacheDirectives.`max-age`
 import esmeta.js.minifier.Minifier
-import esmeta.js.minifier.Minifier.checkMinifyDiffSwc
+import esmeta.js.minifier.Minifier.checkMinifyDiff
 
 object MinifyChecker {
   val swcMinifyFunction: String => Option[String] = code =>
@@ -21,13 +21,14 @@ class MinifyChecker(
   spec: Spec,
   minify: String => Option[String], // minify function
   config: MinifyCheckerConfig = MinifyCheckerConfig(),
+  cmdOption: Option[String],
 ) {
   /*
    * Check if the given code is minified.
    */
   def check(code: String): Option[MinifyCheckResult] = minify(code).map {
     minified =>
-      val diff = checkMinifyDiffSwc(code)
+      val diff = checkMinifyDiff(code, cmdOption)
 
       MinifyCheckResult(
         diff = diff,

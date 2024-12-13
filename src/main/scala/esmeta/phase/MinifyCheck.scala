@@ -27,7 +27,12 @@ case object MinifyCheck extends Phase[Spec, Unit] {
         case Failure(exception) => println(s"[minify-check] $exception"); None
         case Success(minified)  => Some(minified)
 
-    val checker = new MinifyChecker(spec, minifyFunction, MinifyCheckerConfig())
+    val checker = new MinifyChecker(
+      spec,
+      minifyFunction,
+      MinifyCheckerConfig(),
+      config.minifier,
+    )
 
     // Step 3: Use the check method to compare the original code with its minified version
     val resultA = checker.check(codeA)
@@ -51,9 +56,15 @@ case object MinifyCheck extends Phase[Spec, Unit] {
       StrOption((c, s) => c.out = Some(s)),
       "output json file path.",
     ),
+    (
+      "minifier",
+      StrOption((c, s) => c.minifier = Some(s)),
+      "minifier to use.",
+    ),
   )
 
   class Config(
     var out: Option[String] = None,
+    var minifier: Option[String] = None,
   )
 }

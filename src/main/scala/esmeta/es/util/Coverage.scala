@@ -29,6 +29,7 @@ case class Coverage(
   proCrit: Int = 2,
   demCrit: Int = 2,
   fsMinTouch: Int = 10,
+  minifyCmd: Option[String] = None,
 ) {
   import Coverage.{*, given}
 
@@ -37,7 +38,11 @@ case class Coverage(
 
   // TODO: replace with real minify checker
   val swcMinifyChecker =
-    MinifyChecker(cfg.spec, MinifyChecker.swcMinifyFunction)
+    MinifyChecker(
+      cfg.spec,
+      MinifyChecker.swcMinifyFunction,
+      cmdOption = minifyCmd,
+    )
 
   val fsTrie =
     new FSTrieWrapper(

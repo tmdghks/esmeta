@@ -27,7 +27,11 @@ case object CoverageInvestigate extends Phase[CFG, Unit] {
         given CovInvDataDecoder: Decoder[CovInvData] = deriveDecoder
         given CovInvBugDataEncoder: Encoder[CovInvBugData] = deriveEncoder
         val swcMinifyChecker =
-          MinifyChecker(cfg.spec, MinifyChecker.swcMinifyFunction)
+          MinifyChecker(
+            cfg.spec,
+            MinifyChecker.swcMinifyFunction,
+            cmdOption = config.minifier,
+          )
         val data = readJson[List[CovInvData]](filename)
         var res = List.empty[CovInvBugData]
         println(s"Checking ${data.size} scripts")
@@ -190,12 +194,18 @@ case object CoverageInvestigate extends Phase[CFG, Unit] {
       StrOption((c, s) => c.checkJson = Some(s)),
       "check the json file.",
     ),
+    (
+      "minifier",
+      StrOption((c, s) => c.minifier = Some(s)),
+      "minifier to use.",
+    ),
   )
 
   class Config(
     var out: Option[String] = None,
     var useDB: Boolean = false,
     var checkJson: Option[String] = None,
+    var minifier: Option[String] = None,
   )
 }
 

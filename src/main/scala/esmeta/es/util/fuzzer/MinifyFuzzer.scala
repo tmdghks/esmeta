@@ -42,6 +42,7 @@ object MinifyFuzzer {
     demCrit: Int,
     fsMinTouch: Int,
     keepBugs: Boolean = false,
+    minifyCmd: Option[String] = None,
   ): Coverage = new MinifyFuzzer(
     cfg,
     logInterval,
@@ -57,6 +58,7 @@ object MinifyFuzzer {
     demCrit,
     fsMinTouch,
     keepBugs,
+    minifyCmd,
   ).result
 
   val logDir: String = s"$MINIFY_FUZZ_LOG_DIR/fuzz-$dateStr"
@@ -78,6 +80,7 @@ class MinifyFuzzer(
   demCrit: Int,
   fsMinTouch: Int,
   keepBugs: Boolean = false,
+  minifyCmd: Option[String] = None,
 ) {
   import MinifyFuzzer.*
 
@@ -132,6 +135,7 @@ class MinifyFuzzer(
     proCrit = proCrit,
     demCrit = demCrit,
     fsMinTouch = fsMinTouch,
+    minifyCmd = minifyCmd,
   ) {
     override lazy val logDir = MinifyFuzzer.logDir
     override lazy val symlink = MinifyFuzzer.symlink
