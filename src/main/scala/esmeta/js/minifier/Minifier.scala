@@ -13,8 +13,8 @@ object Minifier {
   val minifyCmd = Map(
     "swc" -> "minify-runner -v swc@1.4.6",
     "checkDiffSwc" -> "minify-runner -v swc@1.4.6 -d",
-    "checkDiffTerser" -> "minify-runner -v terser@5.7.2 -d",
-    "checkDiffBabel" -> "minify-runner -v babel@0.5.0 -d",
+    "checkDiffTerser" -> "minify-runner -v terser@5.37.0 -d",
+    "checkDiffBabel" -> "minify-runner -v babel@7.19.3 -d",
   )
 
   lazy val useSwc: Boolean = minifySwc(";").isSuccess
