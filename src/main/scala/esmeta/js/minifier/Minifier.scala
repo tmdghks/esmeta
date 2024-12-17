@@ -8,10 +8,13 @@ import esmeta.error.*
 import esmeta.util.BaseUtils.*
 import esmeta.util.SystemUtils.*
 import java.util.concurrent.TimeoutException
+import esmeta.es.util.USE_STRICT
 
 object Minifier {
   val minifyCmd = Map(
     "swc" -> "minify-runner -v swc@1.4.6",
+    "terser" -> "minify-runner -v terser@5.37.0",
+    "babel" -> "minify-runner -v babel@7.19.3",
     "checkDiffSwc" -> "minify-runner -v swc@1.4.6 -d",
     "checkDiffTerser" -> "minify-runner -v terser@5.37.0 -d",
     "checkDiffBabel" -> "minify-runner -v babel@7.19.3 -d",
@@ -53,6 +56,12 @@ object Minifier {
     checkMinifyDiff(code, Some("swc"))
 
   def checkMinifyDiff(code: String, cmd: Option[String]): Boolean =
+    val iifeCode =
+      if (code.strip().startsWith(USE_STRICT)) then
+        val tempCode = code.strip().stripPrefix(USE_STRICT)
+        USE_STRICT + s"const k = (function () {$tempCode})();"
+      else s"const k = (function () {$code})();"
+
     val minifierCode = cmd match
       case Some("swc") | Some("Swc")       => "checkDiffSwc"
       case Some("terser") | Some("Terser") => "checkDiffTerser"
@@ -62,7 +71,7 @@ object Minifier {
         "checkDiffSwc"
       case _ => throw new Exception("Invalid minifier specified.")
     try {
-      val result = execScript(minifyCmd(minifierCode), code)
+      val result = execScript(minifyCmd(minifierCode), iifeCode)
       result match {
         case Success(minifiedAndDiff) =>
           val diffResult = minifiedAndDiff.split(LINE_SEP).last
