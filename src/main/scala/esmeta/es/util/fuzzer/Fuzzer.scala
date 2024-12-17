@@ -51,6 +51,7 @@ class Fuzzer(
       createSymlink(symlink, logDir, overwrite = true)
       dumpFile(ESMeta.currentVersion, s"$logDir/version")
       dumpFile(getSeed, s"$logDir/seed")
+      dumpFile(minifyCmd.getOrElse(""), s"$logDir/minifier")
       // TODO(@hyp3rflow): impl JSEngine to check current default engine
       // dumpFile(JSEngine.defaultEngineToString, s"$logDir/default-engine")
       genSummaryHeader
