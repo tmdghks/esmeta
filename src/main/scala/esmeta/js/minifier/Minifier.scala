@@ -22,6 +22,12 @@ object Minifier {
 
   lazy val useSwc: Boolean = minifySwc(";").isSuccess
 
+  private var hasWarned = false
+  private def warnUnspecified(): Unit =
+    if !hasWarned then
+      println("No minifier specified. Using SWC as default.")
+      hasWarned = true
+
   def execScript(
     command: String,
     src: String,
@@ -64,7 +70,7 @@ object Minifier {
       case Some("terser") | Some("Terser") => "checkDiffTerser"
       case Some("babel") | Some("Babel")   => "checkDiffBabel"
       case None =>
-        println("No minifier specified. Using SWC as default.")
+        warnUnspecified()
         "checkDiffSwc"
       case _ => throw new Exception("Invalid minifier specified.")
     try {
