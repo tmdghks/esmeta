@@ -43,6 +43,7 @@ object MinifyFuzzer {
     fsMinTouch: Int,
     keepBugs: Boolean = false,
     minifyCmd: Option[String] = None,
+    onlineTest: Boolean = false,
   ): Coverage = new MinifyFuzzer(
     cfg,
     logInterval,
@@ -59,6 +60,7 @@ object MinifyFuzzer {
     fsMinTouch,
     keepBugs,
     minifyCmd,
+    onlineTest,
   ).result
 
   val logDir: String = s"$MINIFY_FUZZ_LOG_DIR/fuzz-$dateStr"
@@ -81,6 +83,7 @@ class MinifyFuzzer(
   fsMinTouch: Int,
   keepBugs: Boolean = false,
   minifyCmd: Option[String] = None,
+  onlineTest: Boolean = false,
 ) {
   import MinifyFuzzer.*
 
@@ -175,7 +178,7 @@ class MinifyFuzzer(
                 bugKickedMap(kickedScript.code) += (code -> views)
           }
         val filtered = interp.coveredAOs intersect filteredAOs
-        if (filtered.isEmpty)
+        if (filtered.isEmpty && onlineTest)
           minifyTest(iter, finalState, code, covered)
         // else println(s"PASS minifier check due to: $filtered")
         if (!updated) fail("NO UPDATE")

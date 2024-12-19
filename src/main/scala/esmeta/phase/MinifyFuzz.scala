@@ -49,6 +49,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       fsMinTouch = config.fsMinTouch,
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
+      onlineTest = config.onlineTest,
     )
 
     for (dirname <- config.out) cov.dumpToWithDetail(dirname)
@@ -140,6 +141,11 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       StrOption((c, s) => c.minifier = Some(s)),
       "set the minifier to use (default: swc).",
     ),
+    (
+      "online-test",
+      BoolOption(c => c.onlineTest = true),
+      "turn on the online test mode (default: false).",
+    ),
   )
   case class Config(
     var log: Boolean = false,
@@ -158,5 +164,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var fsMinTouch: Int = 10,
     var keepBugs: Boolean = false,
     var minifier: Option[String] = None,
+    var onlineTest: Boolean = false,
   )
 }
