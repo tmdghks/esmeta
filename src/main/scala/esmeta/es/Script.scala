@@ -1,8 +1,13 @@
 package esmeta.es
 
 /** ECMAScript script program */
-case class Script(code: String, name: String, isBug: Boolean = false)
-  extends ESElem
+case class Script(
+  code: String,
+  name: String,
+  isBug: Boolean = false,
+  elapsed: Option[Long] = None,
+  iter: Option[Int] = None,
+) extends ESElem
 
 /** Script with minified tag */
 case class ScriptM(
