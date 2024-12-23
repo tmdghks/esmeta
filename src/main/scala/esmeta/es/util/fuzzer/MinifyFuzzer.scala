@@ -96,6 +96,7 @@ class MinifyFuzzer(
       ignoreProperties = List("name").map(prop => s"\"$prop\""),
       debugLevel = debug,
     ),
+    minifyCmd,
   )
 
   val tracerExprMutator = TracerExprMutator(using cfg)

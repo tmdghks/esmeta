@@ -58,8 +58,16 @@ object Minifier {
 
   def minifySwc(src: String): Try[String] = execScript(minifyCmd("swc"), src)
 
-  def minify(src: String, cmd: String): Try[String] =
-    execScript(minifyCmd(cmd), src)
+  def minify(src: String, cmd: Option[String]): Try[String] =
+    val minifierCode = cmd match
+      case Some("swc") | Some("Swc")       => "swc"
+      case Some("terser") | Some("Terser") => "terser"
+      case Some("babel") | Some("Babel")   => "babel"
+      case None =>
+        warnUnspecified()
+        "swc"
+      case _ => throw new Exception("Invalid minifier specified.")
+    execScript(minifyCmd(minifierCode), src)
 
   def checkMinifyDiffSwc(code: String): Boolean =
     checkMinifyDiff(code, Some("swc"))

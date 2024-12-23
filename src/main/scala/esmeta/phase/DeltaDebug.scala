@@ -37,6 +37,7 @@ case object DeltaDebug extends Phase[CFG, String] {
       MinifyTester(
         cfg,
         MinifyTesterConfig(debugLevel = config.debug, timeLimit = Some(1)),
+        None,
       )
     // TODO: fix this after separating silent option
     val result = if (config.multiple) {

@@ -20,6 +20,7 @@ case class MinifyTesterConfig(
 class MinifyTester(
   cfg: CFG,
   config: MinifyTesterConfig = MinifyTesterConfig(),
+  minifyCmd: Option[String],
 ) {
   val MinifyTesterConfig(timeLimit, ignoreProperties, debugLevel) = config
 
@@ -32,7 +33,8 @@ class MinifyTester(
       case _                         => log("minify-tester", "invalid"); code
 
   def test(code: String): Option[MinifyTestResult] =
-    Minifier.minifySwc(code) match
+    // Minifier.minifySwc(code)
+    Minifier.minify(code, minifyCmd) match
       case Failure(exception) => log("minify-tester", s"$exception"); None
       case Success(minified) => {
         val injected = Try {

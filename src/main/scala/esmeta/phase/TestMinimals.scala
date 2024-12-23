@@ -25,6 +25,7 @@ import esmeta.es.util.delta.DeltaDebugger
 import scala.collection.mutable.{Map => MMap, Set => MSet}
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import esmeta.mutator.TracerExprMutator
+import esmeta.js.minifier.Minifier.minifyCmd
 
 case object TestMinimals extends Phase[CFG, Unit] {
   val name = "test-minimals"
@@ -36,13 +37,6 @@ case object TestMinimals extends Phase[CFG, Unit] {
     val baseDir = getFirstFilename(cmdConfig, "test-minimals")
 
     val tracerExprMutator = TracerExprMutator(using cfg)
-    val minifyTester = MinifyTester(
-      cfg,
-      MinifyTesterConfig(
-        timeLimit = config.testTimeLimit,
-        ignoreProperties = List("name").map(prop => s"\"$prop\""),
-      ),
-    )
     val tracerInjector = TracerInjector(using cfg)
 
     val scriptList = listFiles(s"$baseDir/minimal").flatMap { minimal =>
@@ -54,11 +48,23 @@ case object TestMinimals extends Phase[CFG, Unit] {
     }
     val totalCount = scriptList.size
 
-    val baseLogDir = s"$baseDir/minimal/delta"
+    val minifierName = config.minifier match
+      case Some("swc") | Some("Swc") | None => "swc"
+      case Some("terser") | Some("Terser")  => "terser"
+      case Some("babel") | Some("Babel")    => "babel"
+      case _ => throw new Exception("Unsupported minifier")
+
+    val baseLogDir = s"$baseDir/minimal/delta/$minifierName"
     mkdir(baseLogDir)
 
     val minifyFuzzer =
-      new MinifyFuzzer(cfg, proCrit = 1, demCrit = 1, fsMinTouch = 1)
+      new MinifyFuzzer(
+        cfg,
+        proCrit = 1,
+        demCrit = 1,
+        fsMinTouch = 1,
+        minifyCmd = config.minifier,
+      )
     val bugCount = minifyFuzzer.testMinimal(
       scriptList,
       baseLogDir,
@@ -101,6 +107,11 @@ case object TestMinimals extends Phase[CFG, Unit] {
       NumOption((c, k) => c.testTimeLimit = Some(k)),
       "set the test time limit in seconds (default: no limit).",
     ),
+    (
+      "minifier",
+      StrOption((c, s) => c.minifier = Some(s)),
+      "minifier to use.",
+    ),
   )
 
   class Config(
@@ -108,5 +119,6 @@ case object TestMinimals extends Phase[CFG, Unit] {
     var evalTimeLimit: Option[Int] = None,
     var injectTimeLimit: Option[Int] = None,
     var testTimeLimit: Option[Int] = None,
+    var minifier: Option[String] = None,
   )
 }
