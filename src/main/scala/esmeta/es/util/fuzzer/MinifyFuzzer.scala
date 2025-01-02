@@ -213,6 +213,7 @@ class MinifyFuzzer(
         getName = (x, _) => x.name,
         detail = false,
         concurrent = ConcurrentPolicy.Auto,
+        errorHandler = (e, _, name) => println(s"Error: $name: $e"),
       )
     ) {
       minimalIter += 1

@@ -42,7 +42,12 @@ case object TestMinimals extends Phase[CFG, Unit] {
     val scriptList = listFiles(s"$baseDir/minimal").flatMap { minimal =>
       val name = minimal.getName
       if jsFilter(name) then
-        val code = readFile(minimal.getPath).drop(USE_STRICT.length).strip
+        val code = readFile(minimal.getPath).linesIterator
+          .filterNot(_.trim.startsWith("//"))
+          .mkString("\n")
+          .strip
+          .drop(USE_STRICT.length)
+          .strip
         Some(Script(code, name))
       else None
     }
