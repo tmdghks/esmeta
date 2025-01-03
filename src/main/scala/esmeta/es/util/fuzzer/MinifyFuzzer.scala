@@ -353,7 +353,8 @@ class MinifyFuzzer(
 
   private def log(result: MinifyFuzzResult, baseLogDir: String) =
     deltaIndex.synchronized {
-      val MinifyFuzzResult(iter, covered, original, test) = result
+      val MinifyFuzzResult(iter, covered, original, test, name) = result
+      val iterName = s"${name.map(n => s"minimal-$n-").getOrElse("")}iter-$iter"
       val delta = test.original
       val minified = test.minified
       val injected = test.injected
@@ -389,7 +390,7 @@ class MinifyFuzzer(
           // println(s"Found bug: $index")
           val dirpath = s"$baseLogDir/$index/bugs"
           mkdir(dirpath)
-          dumpFile(original, s"$dirpath/$iter.js")
+          dumpFile(original, s"$dirpath/$iterName.js")
           deltaProvenances.getOrElseUpdate(delta, MSet.empty).add(original)
         // if it is already known bug, dump original to label directory.
         case None if db.getLabel(delta).isDefined =>
@@ -397,8 +398,8 @@ class MinifyFuzzer(
           val label = db.getLabel(delta).get
           val dirpath = s"$baseLogDir/labels/$label"
           mkdir(dirpath)
-          dumpFile(original, s"$dirpath/$iter.js")
-          test.getReason.map(dumpFile(_, s"$dirpath/$iter.reason.txt"))
+          dumpFile(original, s"$dirpath/$iterName.js")
+          test.getReason.map(dumpFile(_, s"$dirpath/$iterName.reason.txt"))
         // unreachable path
         case _ => ???
     }
@@ -409,4 +410,5 @@ case class MinifyFuzzResult(
   covered: Boolean,
   original: String,
   result: MinifyTestResult,
+  name: Option[String] = None,
 )
