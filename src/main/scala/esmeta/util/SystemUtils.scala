@@ -116,6 +116,34 @@ object SystemUtils {
       dumpJson(data, filename, noSpace)
       if (!silent) println(s"- Dumped $name into `$filename` in a JSON format.")
 
+  /** dump given iterable data with JSON format, sliced by given size */
+  def dumpJsonChunks[T](
+    name: String,
+    iterable: Iterable[T],
+    filename: String,
+    noSpace: Boolean = false,
+    silent: Boolean = false,
+    chunkSize: Int,
+  )(using Encoder[T]): Unit =
+    if chunkSize <= 0 then dumpJson(name, iterable, filename, noSpace, silent)
+    else
+      val filenameWOExt = removedExt(filename)
+      val filenameExt = getExt(filename)
+      iterable
+        .grouped(chunkSize)
+        .zipWithIndex
+        .foreach {
+          case (slice, idx) =>
+            dumpJson(
+              f"$name $idx%03d",
+              slice,
+              f"$filenameWOExt-$idx%03d.$filenameExt",
+              noSpace,
+              silent,
+            )
+            f"$filenameWOExt-$idx%03d.$filenameExt"
+        }
+
   /** get first filename */
   def getFirstFilename(cmdConfig: CommandConfig, msg: String): String =
     cmdConfig.targets.headOption.getOrElse(throw NoFileError(msg))
