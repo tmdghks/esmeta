@@ -123,6 +123,7 @@ object SystemUtils {
     filename: String,
     noSpace: Boolean = false,
     silent: Boolean = false,
+    useStream: Boolean = false,
     chunkSize: Int,
   )(using Encoder[T]): Unit =
     if chunkSize <= 0 then dumpJson(name, iterable, filename, noSpace, silent)
@@ -140,6 +141,7 @@ object SystemUtils {
               f"$filenameWOExt-$idx%03d.$filenameExt",
               noSpace,
               silent,
+              useStream,
             )
             f"$filenameWOExt-$idx%03d.$filenameExt"
         }
