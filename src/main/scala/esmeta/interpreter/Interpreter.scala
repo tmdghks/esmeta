@@ -582,7 +582,9 @@ class Interpreter(
           ty = AstSingleTy(name, idx, ast.subIdx)
         } yield Nearest(ty, loc)
         Context(func, locals, feature :: prevFeatureStack, nearest)
-      case Some(head: BuiltinHead) => Context(func, locals)
+      case Some(head: BuiltinHead) =>
+        val feature = BuiltinFeature(func, head)
+        Context(func, locals, feature :: prevFeatureStack)
       case _ =>
         Context(
           func,
