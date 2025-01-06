@@ -16,37 +16,40 @@ case object MinifyCheck extends Phase[Spec, Unit] {
   val help = "check differences of ast between original and minified code."
 
   def apply(spec: Spec, cmdConfig: CommandConfig, config: Config): Unit =
-    val fileName = getFirstFilename(cmdConfig, name)
+    println("Sorry, this phase is disabled for now.")
+    println("Sorry, this phase is disabled for now.")
+    println("Sorry, this phase is disabled for now.")
+  // val fileName = getFirstFilename(cmdConfig, name)
 
-    // Step 1: Read the content of a.js and b.js
-    val codeA = Source.fromFile(fileName).getLines().mkString("\n")
+  // // Step 1: Read the content of a.js and b.js
+  // val codeA = Source.fromFile(fileName).getLines().mkString("\n")
 
-    // Step 2: Initialize MinifyChecker
-    val minifyFunction: String => Option[String] = code =>
-      Minifier.minifySwc(code) match
-        case Failure(exception) => println(s"[minify-check] $exception"); None
-        case Success(minified)  => Some(minified)
+  // // Step 2: Initialize MinifyChecker
+  // val minifyFunction: String => Option[String] = code =>
+  //   Minifier.minifySwc(code) match
+  //     case Failure(exception) => println(s"[minify-check] $exception"); None
+  //     case Success(minified)  => Some(minified)
 
-    val checker = new MinifyChecker(
-      spec,
-      minifyFunction,
-      MinifyCheckerConfig(),
-      config.minifier,
-    )
+  // val checker = new MinifyChecker(
+  //   spec,
+  //   minifyFunction,
+  //   MinifyCheckerConfig(),
+  //   config.minifier,
+  // )
 
-    // Step 3: Use the check method to compare the original code with its minified version
-    val resultA = checker.check(codeA)
+  // // Step 3: Use the check method to compare the original code with its minified version
+  // val resultA = checker.check(codeA)
 
-    // Step 4: Print the results
-    println(s"Results for ${fileName}:")
-    resultA match {
-      case Some(res) =>
-        println(s"Diff: ${res.diff}")
-        println(s"Original: ${res.original}")
-        println(s"Minified: ${res.minified}")
-      case None =>
-        println("Minification failed.")
-    }
+  // // Step 4: Print the results
+  // println(s"Results for ${fileName}:")
+  // resultA match {
+  //   case Some(res) =>
+  //     println(s"Diff: ${res.diff}")
+  //     println(s"Original: ${res.original}")
+  //     println(s"Minified: ${res.minified}")
+  //   case None =>
+  //     println("Minification failed.")
+  // }
 
   val defaultConfig: Config = Config()
 

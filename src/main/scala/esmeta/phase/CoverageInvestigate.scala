@@ -9,6 +9,7 @@ import esmeta.util.BaseUtils.*
 import esmeta.es.util.USE_STRICT
 import esmeta.es.util.fuzzer.{MinifierDB, MinifyChecker}
 import esmeta.es.Script
+import esmeta.js.minifier.Minifier
 import scala.util.*
 import java.util.concurrent.atomic.AtomicLong
 import esmeta.util.SystemUtils.*
@@ -26,12 +27,7 @@ case object CoverageInvestigate extends Phase[CFG, Unit] {
       case Some(filename) =>
         given CovInvDataDecoder: Decoder[CovInvData] = deriveDecoder
         given CovInvBugDataEncoder: Encoder[CovInvBugData] = deriveEncoder
-        val swcMinifyChecker =
-          MinifyChecker(
-            cfg.spec,
-            MinifyChecker.swcMinifyFunction,
-            cmdOption = config.minifier,
-          )
+
         val data = readJson[List[CovInvData]](filename)
         var res = List.empty[CovInvBugData]
         println(s"Checking ${data.size} scripts")
@@ -54,7 +50,7 @@ case object CoverageInvestigate extends Phase[CFG, Unit] {
           ) = covInvData
           val strictCode = USE_STRICT + code
           val blockingsWithBug = blockings.filter { blocking =>
-            swcMinifyChecker.check(strictCode).map(_.diff).getOrElse(false)
+            Minifier.checkMinifyDiff(strictCode, config.minifier)
           }
           val blockingWithoutBug = blockings -- blockingsWithBug
           res ::= CovInvBugData(

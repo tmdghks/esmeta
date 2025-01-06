@@ -36,14 +36,6 @@ case class Coverage(
   val jsonProtocol: JsonProtocol = JsonProtocol(cfg)
   import jsonProtocol.given
 
-  // TODO: replace with real minify checker
-  val swcMinifyChecker =
-    MinifyChecker(
-      cfg.spec,
-      MinifyChecker.swcMinifyFunction,
-      cmdOption = minifyCmd,
-    )
-
   val fsTrie =
     new FSTrieWrapper(
       config = FSTrieConfig(
@@ -136,8 +128,7 @@ case class Coverage(
 
     val strictCode = USE_STRICT + code
 
-    val isMinifierHit =
-      swcMinifyChecker.check(strictCode).map(_.diff).getOrElse(false)
+    val isMinifierHit = Minifier.checkMinifyDiff(strictCode, minifyCmd)
 
     val rawStacks =
       interp.touchedNodeViews.keys
@@ -228,8 +219,7 @@ case class Coverage(
 
     val strictCode = USE_STRICT + code
 
-    val isMinifierHit =
-      swcMinifyChecker.check(strictCode).map(_.diff).getOrElse(false)
+    val isMinifierHit = Minifier.checkMinifyDiff(strictCode, minifyCmd)
 
     val rawStacks =
       interp.touchedNodeViews.keys
