@@ -5,21 +5,31 @@ import esmeta.es.*
 import esmeta.parser.ESParser
 import esmeta.spec.Spec
 import akka.http.scaladsl.model.headers.CacheDirectives.`max-age`
+import esmeta.js.minifier.Minifier
+import esmeta.js.minifier.Minifier.checkMinifyDiff
+
+object MinifyChecker {
+  val swcMinifyFunction: String => Option[String] = code =>
+    Minifier.minifySwc(code) match
+      case Failure(exception) =>
+        // println(s"[minify-check] $code $exception")
+        None
+      case Success(minified) => Some(minified)
+}
 
 class MinifyChecker(
   spec: Spec,
   minify: String => Option[String], // minify function
   config: MinifyCheckerConfig = MinifyCheckerConfig(),
+  cmdOption: Option[String],
 ) {
   /*
    * Check if the given code is minified.
    */
   def check(code: String): Option[MinifyCheckResult] = minify(code).map {
     minified =>
-      val originalAst = ESParser(spec.grammar)("Script").from(code)
-      val minifiedAst = ESParser(spec.grammar)("Script").from(minified)
+      val diff = checkMinifyDiff(code, cmdOption)
 
-      val diff = checkAstDiff(originalAst, minifiedAst)
       MinifyCheckResult(
         diff = diff,
         original = code,
@@ -55,20 +65,20 @@ class MinifyChecker(
     flattenedAst1: List[Ast],
     flattenedAst2: List[Ast],
     acc: List[Ast],
-  ): List[Ast] = ???
+  ): List[Ast] = Nil // Deprecated
   // val max = flattenedAst1.length + flattenedAst2.length
   // val v = Array.fill(2 * max + 1)(0)
   // val offset = max
 
   // var result = acc
 
-  // println("------flattenedAst1-----")
-  // flattenedAst1.foreach(ast => println(ast.name))
-  // println("------------------------")
+  // // println("------flattenedAst1-----")
+  // // flattenedAst1.foreach(ast => println(ast.name))
+  // // println("------------------------")
 
-  // println("------flattenedAst2-----")
-  // flattenedAst2.foreach(ast => println(ast.name))
-  // println("------------------------")
+  // // println("------flattenedAst2-----")
+  // // flattenedAst2.foreach(ast => println(ast.name))
+  // // println("------------------------")
 
   // // implement diff algorithm here
   // // partially implement just comparing ast names
@@ -117,7 +127,7 @@ case class MinifyCheckerConfig(
 
 case class MinifyCheckResult(
   // influentialOptions: List[String], // TODO: check options that affect minification (not right now)
-  diff: List[Ast],
+  diff: Boolean,
   original: String,
   minified: String,
 )

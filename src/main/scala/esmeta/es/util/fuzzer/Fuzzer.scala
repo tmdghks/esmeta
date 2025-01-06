@@ -351,7 +351,22 @@ class Fuzzer(
     val bv = cov.branchViewCov
     val tc = cov.targetCondViews.size
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
-    var row = Vector(iter, e, t, visited.size, pool.size, n, b)
+    val swcMr = (cov.swcMinifiableRate * 100 * 1000).round / 1000.0
+    val terserMr = (cov.terserMinifiableRate * 100 * 1000).round / 1000.0
+    val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
+
+    var row = Vector(
+      iter,
+      e,
+      t,
+      visited.size,
+      pool.size,
+      n,
+      b,
+      swcMr,
+      terserMr,
+      babelTr,
+    )
     if (kFs > 0) row ++= Vector(nv, bv)
     row ++= Vector(tc)
     if (kFs > 0) row ++= Vector(tcv)

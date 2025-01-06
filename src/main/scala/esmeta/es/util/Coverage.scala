@@ -7,7 +7,9 @@ import esmeta.interpreter.*
 import esmeta.ir.{EReturnIfAbrupt, Expr, EParse, EBool}
 import esmeta.es.*
 import esmeta.es.util.*
+import esmeta.es.util.fuzzer.MinifyChecker
 import esmeta.es.util.Coverage.Interp
+import esmeta.js.minifier.Minifier
 import esmeta.state.*
 import esmeta.util.*
 import esmeta.util.SystemUtils.*
@@ -54,6 +56,18 @@ case class Coverage(
   // target conditional branches
   private var _targetCondViews: Map[Cond, Map[View, Option[Nearest]]] = Map()
   def targetCondViews: Map[Cond, Map[View, Option[Nearest]]] = _targetCondViews
+
+  def swcMinifiableRate = _minimalInfo.values.count(
+    _.swcMinifiable.getOrElse(false),
+  ) / _minimalInfo.size.toDouble
+
+  def terserMinifiableRate = _minimalInfo.values.count(
+    _.terserMinifiable.getOrElse(false),
+  ) / _minimalInfo.size.toDouble
+
+  def babelTranspilableRate = _minimalInfo.values.count(
+    _.babelTranspilable.getOrElse(false),
+  ) / _minimalInfo.size.toDouble
 
   private lazy val scriptParser = cfg.scriptParser
 
@@ -105,6 +119,10 @@ case class Coverage(
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()
     var touchedCondViews: Map[CondView, Option[Nearest]] = Map()
 
+    val isSwcMinifiable = Minifier.checkMinifyDiff(code, Some("swc"))
+    val isTerserMinifiable = Minifier.checkMinifyDiff(code, Some("terser"))
+    val isBabelTranspilable = Minifier.checkMinifyDiff(code, Some("babel"))
+
     // update node coverage
     for ((nodeView, nearest) <- interp.touchedNodeViews)
       touchedNodeViews += nodeView -> nearest
@@ -133,6 +151,9 @@ case class Coverage(
         ConformTest.createTest(cfg, finalSt),
         touchedNodeViews.keys,
         touchedCondViews.keys,
+        swcMinifiable = Some(isSwcMinifiable),
+        terserMinifiable = Some(isTerserMinifiable),
+        babelTranspilable = Some(isBabelTranspilable),
       )
 
     // TODO: impl checkWithBlocking using `blockingScripts`
@@ -466,6 +487,9 @@ object Coverage {
     test: ConformTest,
     touchedNodeViews: Iterable[NodeView],
     touchedCondViews: Iterable[CondView],
+    swcMinifiable: Option[Boolean] = None,
+    terserMinifiable: Option[Boolean] = None,
+    babelTranspilable: Option[Boolean] = None,
   )
 
   /** syntax-sensitive view */
