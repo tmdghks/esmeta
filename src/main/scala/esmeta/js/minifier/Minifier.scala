@@ -13,11 +13,11 @@ import esmeta.es.util.USE_STRICT
 object Minifier {
   val minifyCmd = Map(
     "swc" -> "minify-runner -v swc@1.4.6",
-    "terser" -> "minify-runner -v terser@5.37.0",
-    "babel" -> "minify-runner -v babel@7.19.3",
+    "terser" -> "minify-runner -v terser@5.29.1",
+    "babel" -> "minify-runner -v babel@7.24.1",
     "checkDiffSwc" -> "minify-runner -v swc@1.4.6 -d",
-    "checkDiffTerser" -> "minify-runner -v terser@5.37.0 -d",
-    "checkDiffBabel" -> "minify-runner -v babel@7.19.3 -d",
+    "checkDiffTerser" -> "minify-runner -v terser@5.29.1 -d",
+    "checkDiffBabel" -> "minify-runner -v babel@7.24.1 -d",
   )
 
   lazy val useSwc: Boolean = minifySwc(";").isSuccess
