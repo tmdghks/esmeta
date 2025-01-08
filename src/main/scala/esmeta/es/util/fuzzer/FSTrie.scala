@@ -57,7 +57,10 @@ class FSTrieWrapper(
   var fixed: Boolean = false,
 ) {
   val fixedSensMap = MMap.empty[List[String], Int]
-  var root: FSTrie = FSTrie(status = FSTrieStatus.Noticed)
+  var root: FSTrie = FSTrie(status = FSTrieStatus.Noticed, depth = 0)
+
+  var sensDistr: MMap[Int, Int] =
+    MMap.from(0 to config.maxSensitivity map (_ -> 0))
 
   private def scoringFunction(
     hits: Long,
@@ -147,6 +150,7 @@ class FSTrieWrapper(
   case class FSTrie(
     private val children: MMap[String, FSTrie] = MMap.empty[String, FSTrie],
     private var status: FSTrieStatus,
+    private val depth: Int,
     var hits: Long = 0,
     var misses: Long = 0,
     var parentHits: Long = 0,
@@ -197,6 +201,7 @@ class FSTrieWrapper(
                   case Noticed => Promotable
                   case _       => Ignored
                 },
+                depth + 1,
               )
               children(head) = child
               child.touchByStack(tail, isHit)
@@ -273,7 +278,8 @@ class FSTrieWrapper(
           case Noticed if node.avgScore < demotionScore =>
             node.status = Ignored
             node.promotables = 0
-          case _ => node.status
+            sensDistr(node.depth) -= 1
+          case _ => ()
         }
       }
       // promote from Promotable to Noticed and Ignored to Promotable
@@ -287,8 +293,9 @@ class FSTrieWrapper(
             }
           case Promotable if node.avgScore > promotionScore =>
             node.status = Noticed
-            node.children.valuesIterator.foreach { c =>
-              c.status = Promotable
+            sensDistr(node.depth) += 1
+            node.children.valuesIterator.foreach { child =>
+              child.status = Promotable
             }
           case _ => node.status
         }

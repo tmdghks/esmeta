@@ -323,6 +323,7 @@ class Fuzzer(
       "branch(#)",
       "minifiable(%)",
     )
+    (1 to kFs).foreach { k => header ++= Vector(s"$k-feat-stacks(#)") }
     if (kFs > 0) header ++= Vector(s"sens-node(#)", s"sens-branch(#)")
     header ++= Vector("target-conds(#)")
     if (kFs > 0) header ++= Vector(s"sens-target-conds(#)")
@@ -364,6 +365,7 @@ class Fuzzer(
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
     val mr = (cov.minifiableRate * 100 * 1000).round / 1000.0
     var row = Vector(iter, e, t, visited.size, pool.size, n, b, mr)
+    (1 to kFs).foreach { k => row ++= Vector(cov.fsTrie.sensDistr(k)) }
     if (kFs > 0) row ++= Vector(nv, bv)
     row ++= Vector(tc)
     if (kFs > 0) row ++= Vector(tcv)
