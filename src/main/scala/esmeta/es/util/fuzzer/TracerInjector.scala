@@ -58,3 +58,41 @@ class TracerInjector(using cfg: CFG) extends Walker {
     case _ => super.walk(syn)
 
 }
+
+class TracerExprInjector(using cfg: CFG) extends Walker {
+  val targetSyns: List[String] = List("Expression")
+  val grammar = cfg.grammar
+  val esParser = cfg.esParser
+
+  def apply(code: String) =
+    try {
+      val ast = cfg.scriptParser.from(code)
+      walk(ast).toString(grammar = Some(grammar))
+    } catch {
+      case e: Exception => throw new Exception(s"Error parsing code: $code", e)
+    }
+
+  def walkChildren(children: Vector[Option[Ast]]) =
+    for {
+      childOpt <- walkVector(children, walkOpt(_, walk))
+    } yield childOpt
+
+  override def walk(syn: Syntactic): Syntactic =
+    syn match
+      case Syntactic("Expression", args, 0, children) =>
+        val expr = Syntactic("Expression", args, 0, walkChildren(children))
+          .toString(grammar = Some(grammar))
+        val syn = esParser("Expression", args)
+          .from(s"$TRACER_SYMBOL($expr)")
+          .asInstanceOf[Syntactic]
+        syn
+      case Syntactic("Expression", args, 1, children) =>
+        val expr = Syntactic("Expression", args, 1, walkChildren(children))
+          .toString(grammar = Some(grammar))
+        val syn = esParser("Expression", args)
+          .from(s"$TRACER_SYMBOL(($expr))")
+          .asInstanceOf[Syntactic]
+        syn
+      case _ => super.walk(syn)
+
+}

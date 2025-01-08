@@ -101,6 +101,7 @@ class MinifyFuzzer(
 
   val tracerExprMutator = TracerExprMutator(using cfg)
   val tracerInjector = TracerInjector(using cfg)
+  val tracerExprInjector = TracerExprInjector(using cfg)
 
   lazy val result: Coverage = fuzzer.result
 
@@ -230,9 +231,12 @@ class MinifyFuzzer(
       val passed = injector.exitTag match
         case NormalTag =>
           val returns = injector.assertions
-          val codes = code +: tracerExprMutator(code, 5, None).map(
-            _._2.toString(grammar = Some(cfg.grammar)),
-          )
+          val tracerExprCode = tracerExprInjector(code)
+          val codes = List(tracerExprCode)
+          // println(s"tracerExprCode: $tracerExprCode")
+          //   code +: tracerExprMutator(code, 5, None).map(
+          //   _._2.toString(grammar = Some(cfg.grammar)),
+          // )
           (for {
             ret <- returns.par
             code <- codes.par
