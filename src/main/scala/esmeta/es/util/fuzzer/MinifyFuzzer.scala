@@ -218,7 +218,7 @@ class MinifyFuzzer(
     ) {
       minimalIter += 1
       val code = minimal.code
-      val name = minimal.name
+      val name = removedExt(minimal.name)
       val state =
         Interpreter(
           cfg.init.from(minimal),
