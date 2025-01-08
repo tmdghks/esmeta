@@ -254,7 +254,7 @@ class MinifyFuzzer(
                   case None | Some(_: AssertionSuccess) => true
                   case Some(result) =>
                     log(
-                      MinifyFuzzResult(minimalIter, false, original, result),
+                      MinifyFuzzResult(minimalIter, false, original, result, Some(name)),
                       baseLogDir,
                     )
                     false
