@@ -311,6 +311,9 @@ class Fuzzer(
       "minimal(#)",
       "node(#)",
       "branch(#)",
+      "swc transpilable(%)",
+      "terser transpilable(%)",
+      "babel transpilable(%)",
     )
     if (kFs > 0) header ++= Vector(s"sens-node(#)", s"sens-branch(#)")
     header ++= Vector("target-conds(#)")
