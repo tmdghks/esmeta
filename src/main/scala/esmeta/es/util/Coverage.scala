@@ -112,7 +112,7 @@ case class Coverage(
   }
 
   def check(script: Script, interp: Interp): (State, Boolean, Boolean) =
-    val Script(code, _) = script
+    val Script(code, _, _, _) = script
     val initSt = cfg.init.from(code)
     val finalSt = interp.result
 
@@ -171,7 +171,7 @@ case class Coverage(
     interp: Interp,
     modify: Boolean,
   ): (State, Boolean, Boolean, Set[Script], Set[NodeView], Set[CondView]) =
-    val Script(code, _) = script
+    val Script(code, _, _, _) = script
     val initSt = cfg.init.from(code)
     val finalSt = interp.result
 
@@ -292,7 +292,10 @@ case class Coverage(
         iterable = _minimalScripts,
         dirname = s"$baseDir/minimal",
         getName = _.name,
-        getData = USE_STRICT + _.code + LINE_SEP,
+getData = script =>
+          f"// iter: ${script.iter.getOrElse(-1)}%d, elapsed: ${script.elapsed
+            .getOrElse(-1L)}%d ms" +
+          LINE_SEP + USE_STRICT + script.code + LINE_SEP,
         remove = true,
       )
       log("Dumped scripts")

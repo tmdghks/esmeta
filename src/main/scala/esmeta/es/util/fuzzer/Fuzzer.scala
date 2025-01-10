@@ -279,7 +279,8 @@ class Fuzzer(
   private def interval: Long = System.currentTimeMillis - startInterval
 
   // conversion from code string to `Script` object
-  protected def toScript(code: String): Script = Script(code, s"$nextId.js")
+  protected def toScript(code: String): Script =
+    Script(code, s"$nextId.js", elapsed = Some(elapsed), iter = Some(iter))
 
   // check if the added code is visited
   protected var visited: Set[String] = Set()
