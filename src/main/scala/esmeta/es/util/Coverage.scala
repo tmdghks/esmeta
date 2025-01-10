@@ -292,7 +292,7 @@ case class Coverage(
         iterable = _minimalScripts,
         dirname = s"$baseDir/minimal",
         getName = _.name,
-getData = script =>
+        getData = script =>
           f"// iter: ${script.iter.getOrElse(-1)}%d, elapsed: ${script.elapsed
             .getOrElse(-1L)}%d ms" +
           LINE_SEP + USE_STRICT + script.code + LINE_SEP,
