@@ -32,8 +32,8 @@ class Fuzzer(
   init: Option[String] = None,
   kFs: Int = 0,
   cp: Boolean = false,
-  proCrit: Int = 2,
-  demCrit: Int = 2,
+  proThreshold: Double = chiSqDistTable("0.01"),
+  demThreshold: Double = chiSqDistTable("0.05"),
   fsMinTouch: Int = 10,
   minifyCmd: Option[String] = None,
 ) {
@@ -225,8 +225,8 @@ class Fuzzer(
       cp,
       timeLimit,
       Some(logDir),
-      proCrit = proCrit,
-      demCrit = demCrit,
+      proThreshold = proThreshold,
+      demThreshold = demThreshold,
       fsMinTouch = fsMinTouch,
       minifyCmd = minifyCmd,
     )
@@ -266,6 +266,7 @@ class Fuzzer(
       BuiltinSynthesizer(cfg.spec.algorithms).initPool
         .map(BuiltinSynthesizer(cfg.spec.algorithms).name -> _),
     )
+    .take(10)
 
   lazy val logDir: String = s"$FUZZ_LOG_DIR/fuzz-$dateStr"
   lazy val symlink: String = s"$FUZZ_LOG_DIR/recent"

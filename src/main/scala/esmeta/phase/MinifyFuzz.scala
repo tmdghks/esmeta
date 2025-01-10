@@ -44,8 +44,8 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       kFs = config.kFs,
       cp = config.cp,
       init = config.init,
-      proCrit = config.proCrit,
-      demCrit = config.demCrit,
+      proThreshold = config.proThreshold,
+      demThreshold = config.demThreshold,
       fsMinTouch = config.fsMinTouch,
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
@@ -117,14 +117,28 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       "explicitly use the given init pool",
     ),
     (
-      "pro-crit",
-      NumOption((c, k) => c.proCrit = k),
-      "set the promotion criterion (default: 2).",
+      "pro-alpha",
+      StrOption((c, k) =>
+        c.proThreshold = chiSqDistTable.getOrElse(
+          k,
+          error(
+            "unsupported pro-alpha: use 0.2, 0.1, 0.05, 0.025, 0.01, 0.005, 0.002 or 0.001",
+          ),
+        ),
+      ),
+      "set the promotion significant level (default: 0.01).",
     ),
     (
-      "dem-crit",
-      NumOption((c, k) => c.demCrit = k),
-      "set the demotion criterion (default: 2).",
+      "dem-alpha",
+      StrOption((c, k) =>
+        c.demThreshold = chiSqDistTable.getOrElse(
+          k,
+          error(
+            "unsupported dem-alpha: use 0.2, 0.1, 0.05, 0.025, 0.01, 0.005, 0.002 or 0.001",
+          ),
+        ),
+      ),
+      "set the demotion significant level (default: 0.05).",
     ),
     (
       "fs-min-touch",
@@ -159,8 +173,8 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var init: Option[String] = None,
     var kFs: Int = 0,
     var cp: Boolean = false,
-    var proCrit: Int = 2,
-    var demCrit: Int = 2,
+    var proThreshold: Double = chiSqDistTable("0.01"),
+    var demThreshold: Double = chiSqDistTable("0.05"),
     var fsMinTouch: Int = 10,
     var keepBugs: Boolean = false,
     var minifier: Option[String] = None,

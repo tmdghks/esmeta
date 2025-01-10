@@ -11,13 +11,19 @@ import esmeta.es.util.Coverage.Interp
 import esmeta.state.*
 import esmeta.util.*
 import esmeta.util.SystemUtils.*
-import esmeta.es.util.fuzzer.{MinifyChecker, FSTrieWrapper}
+import esmeta.es.util.fuzzer.{
+  MinifyChecker,
+  FSTrieWrapper,
+  FSTrieConfig,
+  FSTreeWrapper,
+  FSTreeConfig,
+}
 import esmeta.js.minifier.Minifier
+import esmeta.util.BaseUtils.chiSqDistTable
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import scala.collection.mutable.{Map => MMap}
 
 import scala.math.Ordering.Implicits.seqOrdering
-import esmeta.es.util.fuzzer.FSTrieConfig
 
 /** coverage measurement of cfg */
 case class Coverage(
@@ -26,8 +32,8 @@ case class Coverage(
   cp: Boolean = false,
   timeLimit: Option[Int] = None,
   logDir: Option[String] = None, // TODO: use this
-  proCrit: Int = 2,
-  demCrit: Int = 2,
+  proThreshold: Double = chiSqDistTable("0.01"),
+  demThreshold: Double = chiSqDistTable("0.05"),
   fsMinTouch: Int = 10,
   minifyCmd: Option[String] = None,
 ) {
@@ -36,15 +42,22 @@ case class Coverage(
   val jsonProtocol: JsonProtocol = JsonProtocol(cfg)
   import jsonProtocol.given
 
-  val fsTrie =
-    new FSTrieWrapper(
-      config = FSTrieConfig(
-        maxSensitivity = kFs,
-        promotionCriteria = proCrit,
-        demotionCriteria = demCrit,
-        minTouch = fsMinTouch,
-      ),
-    )
+  val fsTrie = new FSTreeWrapper(
+    config = FSTreeConfig(
+      maxSensitivity = kFs,
+      promotionThreshold = proThreshold,
+      demotionThreshold = demThreshold,
+      minTouch = fsMinTouch,
+    ),
+  )
+  // new FSTreeWrapper(
+  //   config = FSTrieConfig(
+  //     maxSensitivity = kFs,
+  //     promotionCriteria = proCrit,
+  //     demotionCriteria = demCrit,
+  //     minTouch = fsMinTouch,
+  //   ),
+  // )
 
   // minimal scripts
   def minimalScripts: Set[Script] = _minimalScripts
@@ -193,6 +206,7 @@ case class Coverage(
     (finalSt, updated, covered)
 
   // check with both blocking and kicked scripts
+  // NOTE: MinifyFuzzer uses it
   def checkWithDetails(
     script: Script,
     interp: Interp,
@@ -408,7 +422,8 @@ case class Coverage(
     lazy val getCondViewsId = orderedCondViews.zipWithIndex.toMap
     dumpJson(
       name = "constructor",
-      data = CoverageConstructor(kFs, cp, timeLimit, proCrit, demCrit),
+      data =
+        CoverageConstructor(kFs, cp, timeLimit, proThreshold, demThreshold),
       filename = s"$baseDir/constructor.json",
       noSpace = false,
     )
@@ -757,8 +772,8 @@ object Coverage {
     kFs: Int,
     cp: Boolean,
     timeLimit: Option[Int],
-    proCrit: Int,
-    demCrit: Int,
+    proThreshold: Double,
+    demThreshold: Double,
   )
 
   def fromLogSimpl(baseDir: String, cfg: CFG): Coverage =
@@ -776,8 +791,8 @@ object Coverage {
       fsTrieConfig.maxSensitivity,
       con.cp,
       con.timeLimit,
-      proCrit = fsTrieConfig.promotionCriteria,
-      demCrit = fsTrieConfig.demotionCriteria,
+      proThreshold = fsTrieConfig.promotionCriteria,
+      demThreshold = fsTrieConfig.demotionCriteria,
     )
     cov.fsTrie.replaceRootFromFile(f"$baseDir/fstrie-root.json")
     cov.fsTrie.fixed = true
