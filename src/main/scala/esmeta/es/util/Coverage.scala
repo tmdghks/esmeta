@@ -411,7 +411,6 @@ case class Coverage(
       data = CoverageConstructor(kFs, cp, timeLimit, proCrit, demCrit),
       filename = s"$baseDir/constructor.json",
       noSpace = false,
-      useStream = true,
     )
 
     val st = System.nanoTime()
@@ -423,7 +422,6 @@ case class Coverage(
       iterable = orderedNodeViews,
       filename = s"$baseDir/node-coverage-chunks.json",
       noSpace = false,
-      useStream = true,
       chunkSize = 40000,
     )
     log("Dumped node coverage")
@@ -432,7 +430,6 @@ case class Coverage(
       iterable = orderedCondViews,
       filename = s"$baseDir/branch-coverage-chunks.json",
       noSpace = false,
-      useStream = true,
       chunkSize = 40000,
     )
     log("Dumped branch coverage")
@@ -487,7 +484,6 @@ case class Coverage(
         } yield getCondViewsId(CondView(cond, view))).toSeq.sorted.asJson,
         filename = s"$baseDir/target-conds.json",
         noSpace = false,
-        useStream = true,
       )
       log("dumped target conds")
     if (withUnreachableFuncs)
@@ -510,14 +506,12 @@ case class Coverage(
         data = fsTrieConfig,
         filename = s"$baseDir/fstrie-config.json",
         noSpace = false,
-        useStream = true,
       )
       dumpJson(
         name = "fstrie root",
         data = fsTrieRoot,
         filename = s"$baseDir/fstrie-root.json",
         noSpace = false,
-        useStream = true,
       )
       log("dumped fstriewrapper")
 

@@ -1,6 +1,6 @@
 package esmeta.util
 
-import java.io.{BufferedWriter, Reader, File, PrintWriter}
+import java.io.{Reader, File, PrintWriter}
 import java.nio.file.{Files, StandardCopyOption, Paths}
 import java.util.concurrent.{Executors, ExecutorService}
 import esmeta.*
@@ -101,20 +101,9 @@ object SystemUtils {
     filename: String,
     noSpace: Boolean = false,
     silent: Boolean = false,
-    useStream: Boolean = false,
   )(using Encoder[T]): Unit =
-    if (useStream)
-      // handle super big data
-      val json = data.asJson
-      val writer = new BufferedWriter(new PrintWriter(new File(filename)))
-      try
-        if (noSpace) writer.write(json.noSpaces)
-        else writer.write(json.spaces2)
-      finally
-        writer.close()
-    else
-      dumpJson(data, filename, noSpace)
-      if (!silent) println(s"- Dumped $name into `$filename` in a JSON format.")
+    dumpJson(data, filename, noSpace)
+    if (!silent) println(s"- Dumped $name into `$filename` in a JSON format.")
 
   /** dump given iterable data with JSON format, sliced by given size */
   def dumpJsonChunks[T](
@@ -123,7 +112,6 @@ object SystemUtils {
     filename: String,
     noSpace: Boolean = false,
     silent: Boolean = false,
-    useStream: Boolean = false,
     chunkSize: Int,
   )(using Encoder[T]): Unit =
     if chunkSize <= 0 then dumpJson(name, iterable, filename, noSpace, silent)
@@ -141,7 +129,6 @@ object SystemUtils {
               f"$filenameWOExt-$idx%03d.$filenameExt",
               noSpace,
               silent,
-              useStream,
             )
             f"$filenameWOExt-$idx%03d.$filenameExt"
         }
