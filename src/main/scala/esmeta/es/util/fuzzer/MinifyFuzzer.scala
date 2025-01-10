@@ -129,7 +129,7 @@ class MinifyFuzzer(
         val filtered = interp.coveredAOs intersect filteredAOs
         if (filtered.isEmpty)
           minifyTest(iter, finalState, code, covered)
-        else println(s"PASS minifier check due to: $filtered")
+        // else println(s"PASS minifier check due to: $filtered")
         if (!updated) fail("NO UPDATE")
         covered
       },
