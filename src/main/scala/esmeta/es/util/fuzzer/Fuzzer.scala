@@ -311,9 +311,10 @@ class Fuzzer(
       "minimal(#)",
       "node(#)",
       "branch(#)",
-      "swc transpilable(%)",
-      "terser transpilable(%)",
-      "babel transpilable(%)",
+      "swc-transpilable(%)",
+      "terser-transpilable(%)",
+      "swcES2015-transpilable(%)",
+      "babel-transpilable(%)",
     )
     if (kFs > 0) header ++= Vector(s"sens-node(#)", s"sens-branch(#)")
     header ++= Vector("target-conds(#)")
@@ -356,6 +357,8 @@ class Fuzzer(
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
     val swcMr = (cov.swcMinifiableRate * 100 * 1000).round / 1000.0
     val terserMr = (cov.terserMinifiableRate * 100 * 1000).round / 1000.0
+    val swcES2015Tr =
+      (cov.swcES2015TRanspilableRate * 100 * 1000).round / 1000.0
     val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
 
     var row = Vector(
@@ -368,6 +371,7 @@ class Fuzzer(
       b,
       swcMr,
       terserMr,
+      swcES2015Tr,
       babelTr,
     )
     if (kFs > 0) row ++= Vector(nv, bv)

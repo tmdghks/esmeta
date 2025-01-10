@@ -13,9 +13,11 @@ import esmeta.es.util.USE_STRICT
 object Minifier {
   val minifyCmd = Map(
     "swc" -> "minify-runner -v swc@1.4.6",
+    "swcES2015" -> "minify-runner -v swc@1.4.6 --notcompress -t es2015", // todo? refactor to use general minify command with options
     "terser" -> "minify-runner -v terser@5.29.1",
     "babel" -> "minify-runner -v babel@7.24.1",
     "checkDiffSwc" -> "minify-runner -v swc@1.4.6 -d",
+    "chekcDiffSwcES2015" -> "minify-runner -v swc@1.4.6 --notcompress -t es2015 -d",
     "checkDiffTerser" -> "minify-runner -v terser@5.29.1 -d",
     "checkDiffBabel" -> "minify-runner -v babel@7.24.1 -d",
   )
@@ -60,9 +62,10 @@ object Minifier {
 
   def minify(src: String, cmd: Option[String]): Try[String] =
     val minifierCode = cmd match
-      case Some("swc") | Some("Swc")       => "swc"
-      case Some("terser") | Some("Terser") => "terser"
-      case Some("babel") | Some("Babel")   => "babel"
+      case Some("swc") | Some("Swc")             => "swc"
+      case Some("terser") | Some("Terser")       => "terser"
+      case Some("babel") | Some("Babel")         => "babel"
+      case Some("swcES2015") | Some("SwcES2015") => "swcES2015"
       case None =>
         warnUnspecified()
         "swc"
@@ -74,9 +77,10 @@ object Minifier {
 
   def checkMinifyDiff(code: String, cmd: Option[String]): Boolean =
     val minifierCode = cmd match
-      case Some("swc") | Some("Swc")       => "checkDiffSwc"
-      case Some("terser") | Some("Terser") => "checkDiffTerser"
-      case Some("babel") | Some("Babel")   => "checkDiffBabel"
+      case Some("swc") | Some("Swc")              => "checkDiffSwc"
+      case Some("terser") | Some("Terser")        => "checkDiffTerser"
+      case Some("babel") | Some("Babel")          => "checkDiffBabel"
+      case Some("swcES2015") | Some("SwcESE2015") => "checkDiffSwcES2015"
       case None =>
         warnUnspecified()
         "checkDiffSwc"

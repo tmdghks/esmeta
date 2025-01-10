@@ -65,6 +65,10 @@ case class Coverage(
     _.terserMinifiable.getOrElse(false),
   ) / _minimalInfo.size.toDouble
 
+  def swcES2015TRanspilableRate = _minimalInfo.values.count(
+    _.swcES2015Transpilable.getOrElse(false),
+  ) / _minimalInfo.size.toDouble
+
   def babelTranspilableRate = _minimalInfo.values.count(
     _.babelTranspilable.getOrElse(false),
   ) / _minimalInfo.size.toDouble
@@ -121,6 +125,8 @@ case class Coverage(
 
     val isSwcMinifiable = Minifier.checkMinifyDiff(code, Some("swc"))
     val isTerserMinifiable = Minifier.checkMinifyDiff(code, Some("terser"))
+    val isSwcES2015Transpilable =
+      Minifier.checkMinifyDiff(code, Some("swcES2015"))
     val isBabelTranspilable = Minifier.checkMinifyDiff(code, Some("babel"))
 
     // update node coverage
@@ -153,6 +159,7 @@ case class Coverage(
         touchedCondViews.keys,
         swcMinifiable = Some(isSwcMinifiable),
         terserMinifiable = Some(isTerserMinifiable),
+        swcES2015Transpilable = Some(isSwcES2015Transpilable),
         babelTranspilable = Some(isBabelTranspilable),
       )
 
@@ -489,6 +496,7 @@ object Coverage {
     touchedCondViews: Iterable[CondView],
     swcMinifiable: Option[Boolean] = None,
     terserMinifiable: Option[Boolean] = None,
+    swcES2015Transpilable: Option[Boolean] = None,
     babelTranspilable: Option[Boolean] = None,
   )
 
