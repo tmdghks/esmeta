@@ -275,12 +275,11 @@ class FSTreeWrapper(
       foreachFromLeaf { node =>
         node.status match {
           case Noticed if node.chiSqValue < config.demotionThreshold =>
-            node.status = Ignored
-            node.promotables = 0
-            children.valuesIterator.foreach { child =>
+            node.foreachFromRoot { child =>
               child.status = Ignored
+              if child.status == Noticed then sensDistr(child.depth) -= 1
+              child.promotables = 0
             }
-            sensDistr(node.depth) -= 1
           case _ => ()
         }
       }
