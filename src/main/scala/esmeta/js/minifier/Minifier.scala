@@ -17,7 +17,7 @@ object Minifier {
     "terser" -> "minify-runner -v terser@5.29.1",
     "babel" -> "minify-runner -v babel@7.24.1",
     "checkDiffSwc" -> "minify-runner -v swc@1.4.6 -d",
-    "chekcDiffSwcES2015" -> "minify-runner -v swc@1.4.6 --notcompress -t es2015 -d",
+    "checkDiffSwcES2015" -> "minify-runner -v swc@1.4.6 --notcompress -t es2015 -d",
     "checkDiffTerser" -> "minify-runner -v terser@5.29.1 -d",
     "checkDiffBabel" -> "minify-runner -v babel@7.24.1 -d",
   )
@@ -77,10 +77,10 @@ object Minifier {
 
   def checkMinifyDiff(code: String, cmd: Option[String]): Boolean =
     val minifierCode = cmd match
-      case Some("swc") | Some("Swc")              => "checkDiffSwc"
-      case Some("terser") | Some("Terser")        => "checkDiffTerser"
-      case Some("babel") | Some("Babel")          => "checkDiffBabel"
-      case Some("swcES2015") | Some("SwcESE2015") => "checkDiffSwcES2015"
+      case Some("swc") | Some("Swc")             => "checkDiffSwc"
+      case Some("terser") | Some("Terser")       => "checkDiffTerser"
+      case Some("babel") | Some("Babel")         => "checkDiffBabel"
+      case Some("swcES2015") | Some("SwcES2015") => "checkDiffSwcES2015"
       case None =>
         warnUnspecified()
         "checkDiffSwc"
@@ -91,7 +91,10 @@ object Minifier {
         case Success(minifiedAndDiff) =>
           val diffResult = minifiedAndDiff.split(LINE_SEP).last
           if diffResult == "true" then true
-          else false
+          else if diffResult == "false" then false
+          else {
+            throw new Exception(s"Invalid diff result: $diffResult")
+          }
         case Failure(exception) =>
           // println(s"[minify-check] $code $exception")
           false
