@@ -57,6 +57,8 @@ case object TestMinimals extends Phase[CFG, Unit] {
       case Some("swc") | Some("Swc") | None => "swc"
       case Some("terser") | Some("Terser")  => "terser"
       case Some("babel") | Some("Babel")    => "babel"
+      case Some("swcES2015") | Some("SwcES2015") =>
+        "swcES2015"
       case _ => throw new Exception("Unsupported minifier")
 
     val baseLogDir = s"$baseDir/minimal/delta/$minifierName"
