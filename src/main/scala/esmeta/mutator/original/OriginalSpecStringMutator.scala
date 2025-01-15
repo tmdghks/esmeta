@@ -3,7 +3,8 @@ package esmeta.mutator.original
 import esmeta.cfg.CFG
 import esmeta.es.*
 import esmeta.es.util.*
-import esmeta.synthesizer.* // todo(@tmdghks): replace with original one
+import esmeta.synthesizer.Synthesizer 
+import esmeta.synthesizer.original.*
 import esmeta.es.util.{UnitWalker => AstWalker, *}
 import esmeta.es.util.Coverage.*
 import esmeta.spec.Grammar
@@ -12,7 +13,7 @@ import esmeta.util.BaseUtils.*
 
 /** A mutator that generates based on stirngs in spec literals */
 class SpecStringMutator(using cfg: CFG)(
-  val synthesizer: Synthesizer = RandomSynthesizer(cfg.grammar),
+  val synthesizer: Synthesizer = OriginalRandomSynthesizer(cfg.grammar),
 ) extends OriginalMutator
   with OriginalUtil.AdditiveListWalker {
 

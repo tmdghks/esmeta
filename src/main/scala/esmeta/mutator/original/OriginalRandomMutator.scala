@@ -8,10 +8,11 @@ import esmeta.mutator.original.*
 import esmeta.mutator.original.OriginalUtil.*
 import esmeta.util.*
 import esmeta.util.BaseUtils.*
-import esmeta.synthesizer.* // todo(@tmdghks): replace with original one
+import esmeta.synthesizer.Synthesizer 
+import esmeta.synthesizer.original.*
 
 class OriginalRandomMutator(using cfg: CFG)(
-  val synthesizer: Synthesizer = RandomSynthesizer(cfg.grammar), // todo(@tmdghks): replace with original one
+  val synthesizer: Synthesizer = OriginalRandomSynthesizer(cfg.grammar), // todo(@tmdghks): replace with original one
 ) extends OriginalMutator {
   import OriginalRandomMutator.*
 
@@ -37,7 +38,6 @@ class OriginalRandomMutator(using cfg: CFG)(
   object Walker extends OriginalUtil.AdditiveListWalker {
     override def walk(ast: Syntactic): List[Syntactic] =
       val mutants = super.walk(ast)
-      // todo check synthesizer using original one (ported from jestfs)
       if isTarget(ast) then List.tabulate(c)(_ => synthesizer(ast)) ++ mutants
       else mutants
 
