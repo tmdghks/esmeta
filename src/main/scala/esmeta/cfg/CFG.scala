@@ -12,6 +12,8 @@ import esmeta.util.BaseUtils.*
 import esmeta.util.{ConcurrentPolicy => CP}
 import esmeta.util.ProgressBar
 import esmeta.util.SystemUtils.*
+import esmeta.spec.SyntaxDirectedOperationHead
+import esmeta.spec.BuiltinHead
 
 /** control-flow graphs (CFGs) */
 case class CFG(
@@ -110,4 +112,12 @@ object CFG {
     import esmeta.compiler.Compiler
     import esmeta.extractor.Extractor
     CFGBuilder(Compiler(Extractor()))
+
+  /** number of features */
+  lazy val numFeatures = defaultCFG.funcs.count(func =>
+    func.head match {
+      case Some(_: SyntaxDirectedOperationHead) | Some(_: BuiltinHead) => true
+      case _                                                           => false
+    },
+  )
 }
