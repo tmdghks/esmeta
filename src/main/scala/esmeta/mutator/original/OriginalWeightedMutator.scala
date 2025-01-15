@@ -12,7 +12,7 @@ import esmeta.util.BaseUtils.*
 import esmeta.ty.AstSingleTy
 
 /** A nearest ECMAScript AST mutator */
-class WeightedMutator(using cfg: CFG)(
+class OriginalWeightedMutator(using cfg: CFG)(
   val pairs: (OriginalMutator, Int)*,
 ) extends OriginalMutator {
 

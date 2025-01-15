@@ -12,7 +12,7 @@ import esmeta.util.*
 import esmeta.util.BaseUtils.*
 
 /** A mutator that generates based on stirngs in spec literals */
-class SpecStringMutator(using cfg: CFG)(
+class OriginalSpecStringMutator(using cfg: CFG)(
   val synthesizer: Synthesizer = OriginalRandomSynthesizer(cfg.grammar),
 ) extends OriginalMutator
   with OriginalUtil.AdditiveListWalker {

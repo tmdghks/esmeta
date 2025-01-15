@@ -12,8 +12,8 @@ import esmeta.util.*
 import esmeta.util.BaseUtils.*
 import esmeta.ty.AstSingleTy
 
-class NearestMutator(using cfg: CFG)(
-  val synthesizer: Synthesizer,
+class OriginalNearestMutator(using cfg: CFG)(
+  val synthesizer: Synthesizer = OriginalRandomSynthesizer(cfg.grammar),
 ) extends OriginalMutator {
 
   val names = "NearestMutator" :: OriginalRandomMutator(synthesizer).names
