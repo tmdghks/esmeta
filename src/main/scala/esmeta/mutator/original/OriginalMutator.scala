@@ -7,7 +7,7 @@ import esmeta.spec.Grammar
 import esmeta.util.*
 import esmeta.cfg.CFG
 
-trait Mutator(using val cfg: CFG) {
+trait OriginalMutator(using val cfg: CFG) {
   private type Result = Seq[(String, Ast)]
 
   /** mutate string */

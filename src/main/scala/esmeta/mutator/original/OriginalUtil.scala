@@ -6,7 +6,7 @@ import esmeta.es.util.Coverage.*
 import esmeta.spec.Grammar
 import esmeta.util.*
 
-object Util {
+object OriginalUtil {
   class AstCounter(pred: Ast => Boolean) extends UnitWalker {
     def apply(ast: Ast): Int = {
       _cnt = 0

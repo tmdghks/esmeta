@@ -5,15 +5,15 @@ import esmeta.cfg.CFG
 import esmeta.es.util.*
 import esmeta.es.util.Coverage.*
 import esmeta.mutator.original.* 
-import esmeta.mutator.original.Util.*
+import esmeta.mutator.original.OriginalUtil.*
 import esmeta.util.*
 import esmeta.util.BaseUtils.*
 import esmeta.synthesizer.* // todo(@tmdghks): replace with original one
 
-class RandomMutator(using cfg: CFG)(
+class OriginalRandomMutator(using cfg: CFG)(
   val synthesizer: Synthesizer = RandomSynthesizer(cfg.grammar), // todo(@tmdghks): replace with original one
-) extends Mutator {
-  import RandomMutator.*
+) extends OriginalMutator {
+  import OriginalRandomMutator.*
 
   val names = List("RandomMutator")
 
@@ -34,7 +34,7 @@ class RandomMutator(using cfg: CFG)(
   var c = 0
 
   /** internal walker */
-  object Walker extends Util.AdditiveListWalker {
+  object Walker extends OriginalUtil.AdditiveListWalker {
     override def walk(ast: Syntactic): List[Syntactic] =
       val mutants = super.walk(ast)
       // todo check synthesizer using original one (ported from jestfs)
@@ -51,7 +51,7 @@ class RandomMutator(using cfg: CFG)(
   }
 }
 
-object RandomMutator {
+object OriginalRandomMutator {
   // true if the given ast is target ast
   def isTarget = (ast: Ast) =>
     List(
@@ -63,7 +63,7 @@ object RandomMutator {
       .contains(ast.name)
 
   // count the number of target sub-ast
-  val targetAstCounter = new Util.AstCounter(isTarget)
+  val targetAstCounter = new OriginalUtil.AstCounter(isTarget)
 
   // todo(@tmdghks): fix error regarding the following line
   /// default random mutator

@@ -11,13 +11,13 @@ import esmeta.util.BaseUtils.*
 import esmeta.es.util.*
 
 /** A mutator that inserts statements to ECMAScript AST */
-class StatementInserter(using cfg: CFG)(
+class OriginalStatementInserter(using cfg: CFG)(
   val synthesizer: Synthesizer = RandomSynthesizer(cfg.grammar),
-) extends Mutator
-  with Util.MultiplicativeListWalker {
-  import StatementInserter.*
+) extends OriginalMutator
+  with OriginalUtil.MultiplicativeListWalker {
+  import OriginalStatementInserter.*
 
-  val names = "StatementInserter" :: RandomMutator(synthesizer).names
+  val names = "StatementInserter" :: OriginalRandomMutator(synthesizer).names
 
   /** mutate a program */
   def apply(
@@ -28,7 +28,7 @@ class StatementInserter(using cfg: CFG)(
     // count the number of stmtLists
     val k = stmtListCounter(ast)
 
-    if (k == 0) RandomMutator(synthesizer)(ast, n, _target)
+    if (k == 0) OriginalRandomMutator(synthesizer)(ast, n, _target)
     else if (n == 1)
       // Insert one statement with 80% probability
       k1 = k - 1
@@ -174,7 +174,7 @@ class StatementInserter(using cfg: CFG)(
   ).toMap
 }
 
-object StatementInserter {
+object OriginalStatementInserter {
   val STATEMENT_LIST = "StatementList"
   val STATEMENT_LIST_ITEM = "StatementListItem"
   val STATEMENT_LIST_OPTIONAL_CONTAINERS = List(
@@ -215,7 +215,7 @@ object StatementInserter {
   )
 
   // count the number of places where stmt can be inserted
-  val stmtListCounter = Util.AstCounter(ast => {
+  val stmtListCounter = OriginalUtil.AstCounter(ast => {
     ast.name == STATEMENT_LIST || containsEmptyStatementList(ast)
   })
 }

@@ -13,9 +13,9 @@ import esmeta.ty.AstSingleTy
 
 class NearestMutator(using cfg: CFG)(
   val synthesizer: Synthesizer,
-) extends Mutator {
+) extends OriginalMutator {
 
-  val names = "NearestMutator" :: RandomMutator(synthesizer).names
+  val names = "NearestMutator" :: OriginalRandomMutator(synthesizer).names
 
   /** mutate programs */
   def apply(
@@ -27,10 +27,10 @@ class NearestMutator(using cfg: CFG)(
     CondView(cond, view) = condView
     nearest <- cov.targetCondViews.getOrElse(cond, Map()).getOrElse(view, None)
   } yield Walker(nearest, n).walk(ast).map((name, _)))
-    .getOrElse(RandomMutator(synthesizer)(ast, n, target)) // todo(@tmdghks): replace with original synthesizer
+    .getOrElse(OriginalRandomMutator(synthesizer)(ast, n, target)) // todo(@tmdghks): replace with original synthesizer
 
   /** internal walker */
-  class Walker(nearest: Nearest, n: Int) extends Util.MultiplicativeListWalker {
+  class Walker(nearest: Nearest, n: Int) extends OriginalUtil.MultiplicativeListWalker {
     val AstSingleTy(name, rhsIdx, subIdx) = nearest.ty
     override def walk(ast: Syntactic): List[Syntactic] =
       if (
@@ -45,10 +45,10 @@ class NearestMutator(using cfg: CFG)(
   }
 
   /** internal walker that mutates all internal nodes with same prob. */
-  object TotalWalker extends Util.AdditiveListWalker {
+  object TotalWalker extends OriginalUtil.AdditiveListWalker {
     var c = 0
     def apply(ast: Syntactic, n: Int): List[Syntactic] =
-      val k = Util.simpleAstCounter(ast)
+      val k = OriginalUtil.simpleAstCounter(ast)
       c = (n - 1) / k + 1
       shuffle(walk(ast)).take(n).toList
 

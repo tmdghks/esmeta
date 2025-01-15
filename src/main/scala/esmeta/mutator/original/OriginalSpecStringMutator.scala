@@ -13,13 +13,13 @@ import esmeta.util.BaseUtils.*
 /** A mutator that generates based on stirngs in spec literals */
 class SpecStringMutator(using cfg: CFG)(
   val synthesizer: Synthesizer = RandomSynthesizer(cfg.grammar),
-) extends Mutator
-  with Util.AdditiveListWalker {
+) extends OriginalMutator
+  with OriginalUtil.AdditiveListWalker {
 
   val names =
-    "SpecStringMutator" :: RandomMutator(synthesizer).names
+    "SpecStringMutator" :: OriginalRandomMutator(synthesizer).names
 
-  import SpecStringMutator.*
+  import OriginalSpecStringMutator.*
 
   /** mutate a program */
   def apply(
@@ -29,7 +29,7 @@ class SpecStringMutator(using cfg: CFG)(
   ): Seq[(String, Ast)] = {
     // count the number of primary expressions
     val k = primaryCounter(ast)
-    if (k == 0) RandomMutator(synthesizer)(ast, n, target)
+    if (k == 0) OriginalRandomMutator(synthesizer)(ast, n, target)
     else
       c = (n - 1) / k + 1
       targetCondStr = target.flatMap(_._1.cond.elem match {
@@ -100,7 +100,7 @@ class SpecStringMutator(using cfg: CFG)(
 
 }
 
-object SpecStringMutator {
+object OriginalSpecStringMutator {
   // macro
   val PRIMARY_EXPRESSION = "PrimaryExpression"
 
@@ -109,7 +109,7 @@ object SpecStringMutator {
     case Syntactic(PRIMARY_EXPRESSION, _, _, _) => true
     case _                                      => false
   }
-  val primaryCounter = Util.AstCounter(isPrimary)
+  val primaryCounter = OriginalUtil.AstCounter(isPrimary)
 
   // manually selected algorithms,
   // whoose purposes is reading property

@@ -12,8 +12,8 @@ import esmeta.ty.AstSingleTy
 
 /** A nearest ECMAScript AST mutator */
 class WeightedMutator(using cfg: CFG)(
-  val pairs: (Mutator, Int)*,
-) extends Mutator {
+  val pairs: (OriginalMutator, Int)*,
+) extends OriginalMutator {
 
   /** mutate programs */
   def apply(

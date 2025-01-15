@@ -11,14 +11,14 @@ import esmeta.util.*
 import esmeta.util.BaseUtils.*
 
 /** A mutator that removes nodes of ECMAScript AST */
-class Remover(using cfg: CFG)(
+class OriginalRemover(using cfg: CFG)(
   val synthesizer: Synthesizer = RandomSynthesizer(cfg.grammar),
-) extends Mutator
-  with Util.MultiplicativeListWalker {
+) extends OriginalMutator
+  with OriginalUtil.MultiplicativeListWalker {
 
-  val names = "Remover" :: RandomMutator(synthesizer).names
+  val names = "Remover" :: OriginalRandomMutator(synthesizer).names
 
-  import Remover.*
+  import OriginalRemover.*
 
   /** mutate a program */
   def apply(
@@ -30,10 +30,10 @@ class Remover(using cfg: CFG)(
     val k = victimCounter(ast)
     k1 = 0
     k2 = k
-    if (k == 0) RandomMutator(synthesizer)(ast, n, _target)
+    if (k == 0) OriginalRandomMutator(synthesizer)(ast, n, _target)
     else if (Math.pow(2, k) < n)
       walk(ast)
-        .map((name, _)) ++ RandomMutator(synthesizer)(
+        .map((name, _)) ++ OriginalRandomMutator(synthesizer)(
         ast,
         n - (1 << k),
         _target,
@@ -69,7 +69,7 @@ class Remover(using cfg: CFG)(
     else mutants
 }
 
-object Remover {
+object OriginalRemover {
   def findSameChild(ast: Ast): Int = ast match {
     case Syntactic(name, args, rhsIdx, children) =>
       children.indexWhere(_ match {
@@ -80,5 +80,5 @@ object Remover {
   }
 
   // count the number of asts that have same child
-  val victimCounter = Util.AstCounter(ast => findSameChild(ast) >= 0)
+  val victimCounter = OriginalUtil.AstCounter(ast => findSameChild(ast) >= 0)
 }
