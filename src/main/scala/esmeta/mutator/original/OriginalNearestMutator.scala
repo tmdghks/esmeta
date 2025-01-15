@@ -2,7 +2,7 @@ package esmeta.mutator.original
 
 import esmeta.cfg.CFG
 import esmeta.es.*
-import esmeta.synthesizer.Synthesizer 
+import esmeta.synthesizer.Synthesizer
 import esmeta.synthesizer.original.*
 import esmeta.es.util.{Walker => AstWalker, *}
 import esmeta.es.util.Coverage.*
@@ -28,10 +28,13 @@ class OriginalNearestMutator(using cfg: CFG)(
     CondView(cond, view) = condView
     nearest <- cov.targetCondViews.getOrElse(cond, Map()).getOrElse(view, None)
   } yield Walker(nearest, n).walk(ast).map((name, _)))
-    .getOrElse(OriginalRandomMutator(synthesizer)(ast, n, target)) // todo(@tmdghks): replace with original synthesizer
+    .getOrElse(
+      OriginalRandomMutator(synthesizer)(ast, n, target),
+    )
 
   /** internal walker */
-  class Walker(nearest: Nearest, n: Int) extends OriginalUtil.MultiplicativeListWalker {
+  class Walker(nearest: Nearest, n: Int)
+    extends OriginalUtil.MultiplicativeListWalker {
     val AstSingleTy(name, rhsIdx, subIdx) = nearest.ty
     override def walk(ast: Syntactic): List[Syntactic] =
       if (

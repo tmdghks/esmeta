@@ -4,15 +4,17 @@ import esmeta.es.*
 import esmeta.cfg.CFG
 import esmeta.es.util.*
 import esmeta.es.util.Coverage.*
-import esmeta.mutator.original.* 
+import esmeta.mutator.original.*
 import esmeta.mutator.original.OriginalUtil.*
 import esmeta.util.*
 import esmeta.util.BaseUtils.*
-import esmeta.synthesizer.Synthesizer 
+import esmeta.synthesizer.Synthesizer
 import esmeta.synthesizer.original.*
 
 class OriginalRandomMutator(using cfg: CFG)(
-  val synthesizer: Synthesizer = OriginalRandomSynthesizer(cfg.grammar), // todo(@tmdghks): replace with original one
+  val synthesizer: Synthesizer = OriginalRandomSynthesizer(
+    cfg.grammar,
+  ), // todo(@tmdghks): replace with original one
 ) extends OriginalMutator {
   import OriginalRandomMutator.*
 
@@ -66,6 +68,6 @@ object OriginalRandomMutator {
   val targetAstCounter = new OriginalUtil.AstCounter(isTarget)
 
   // todo(@tmdghks): fix error regarding the following line
-  /// default random mutator
+  // / default random mutator
   // val default = RandomMutator()
 }

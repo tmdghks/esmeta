@@ -17,9 +17,21 @@ import scala.util.*
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.mutable.{Map => MMap, Set => MSet}
 
-import esmeta.es.util.fuzzer.{MinifierDB, MinifyChecker, MinifyTester, TargetSelector, TracerInjector, TRACER_SYMBOL}
+import esmeta.es.util.fuzzer.{
+  MinifierDB,
+  MinifyChecker,
+  MinifyTester,
+  TargetSelector,
+  TracerInjector,
+  TRACER_SYMBOL,
+}
 import esmeta.es.util.fuzzer.{WeightedSelector, BranchSelector, RandomSelector}
-import esmeta.es.util.fuzzer.{MinifyTesterConfig, AssertionSuccess, AssertionFailure, MinifyTestResult}
+import esmeta.es.util.fuzzer.{
+  MinifyTesterConfig,
+  AssertionSuccess,
+  AssertionFailure,
+  MinifyTestResult,
+}
 
 import io.circe.Json
 import java.util.concurrent.atomic.AtomicInteger

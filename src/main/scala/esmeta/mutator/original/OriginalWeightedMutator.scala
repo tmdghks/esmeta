@@ -2,7 +2,7 @@ package esmeta.mutator.original
 
 import esmeta.cfg.CFG
 import esmeta.es.*
-import esmeta.synthesizer.Synthesizer 
+import esmeta.synthesizer.Synthesizer
 import esmeta.synthesizer.original.*
 import esmeta.es.util.{Walker => AstWalker, *}
 import esmeta.es.util.Coverage.*
