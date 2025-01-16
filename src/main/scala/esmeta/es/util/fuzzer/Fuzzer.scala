@@ -351,6 +351,8 @@ class Fuzzer(
 
   // logging
   def logging: Unit =
+    val startTime = System.currentTimeMillis
+
     val n = cov.nodeCov
     val b = cov.branchCov
     val e = elapsed
@@ -369,6 +371,10 @@ class Fuzzer(
     // dump coverage
     cov.dumpToWithDetail(logDir, withMsg = (debug == ALL))
     dumpStat(mutator.names, mutatorStat, mutStatTsv)
+
+    val duration = Time(System.currentTimeMillis - startTime)
+    println(f"- Logging time: $duration")
+
   private def addRow(data: Iterable[Any], nf: PrintWriter = summaryTsv): Unit =
     val row = data.mkString("\t")
     if (stdOut) println(row)
