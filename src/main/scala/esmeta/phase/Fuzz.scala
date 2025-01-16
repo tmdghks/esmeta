@@ -6,7 +6,7 @@ import esmeta.util.*
 import esmeta.util.BaseUtils.*
 import esmeta.util.SystemUtils.*
 import esmeta.es.*
-import esmeta.es.util.fuzzer.Fuzzer
+import esmeta.es.util.fuzzer.{Fuzzer, FSTreeConfig}
 import esmeta.es.util.{UnitWalker, Coverage, ValidityChecker}
 import esmeta.spec.util.GrammarGraph
 import esmeta.synthesizer.{SimpleSynthesizer, BuiltinSynthesizer}
@@ -35,7 +35,9 @@ case object Fuzz extends Phase[CFG, Coverage] {
       timeLimit = config.timeLimit,
       trial = config.trial,
       duration = config.duration,
-      kFs = config.kFs,
+      fsTreeConfig = FSTreeConfig(
+        maxSensitivity = config.kFs,
+      ),
       cp = config.cp,
       init = config.init,
     ).result

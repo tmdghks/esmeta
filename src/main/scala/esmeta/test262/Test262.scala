@@ -6,6 +6,7 @@ import esmeta.error.{NotSupported, InvalidExit, UnexpectedParseResult}
 import esmeta.error.NotSupported.*
 import esmeta.es.*
 import esmeta.es.util.*
+import esmeta.es.util.fuzzer.*
 import esmeta.interpreter.Interpreter
 import esmeta.parser.ESParser
 import esmeta.state.*
@@ -129,6 +130,7 @@ case class Test262(
     lazy val cov = Coverage(
       cfg = cfg,
       timeLimit = timeLimit,
+      fsTreeConfig = FSTreeConfig(),
     )
 
     // run tests with logging

@@ -67,9 +67,7 @@ case object TestMinimals extends Phase[CFG, Unit] {
     val minifyFuzzer =
       new MinifyFuzzer(
         cfg,
-        proThreshold = 1,
-        demCrit = 1,
-        fsMinTouch = 1,
+        fsTreeConfig = FSTreeConfig(),
         minifyCmd = config.minifier,
       )
     val bugCount = minifyFuzzer.testMinimal(

@@ -30,11 +30,8 @@ class Fuzzer(
   trial: Option[Int] = None, // `None` denotes no bound
   duration: Option[Int] = None, // `None` denotes no bound
   init: Option[String] = None,
-  kFs: Int = 0,
   cp: Boolean = false,
-  proThreshold: Double = chiSqDistTable("0.01"),
-  demThreshold: Double = chiSqDistTable("0.05"),
-  fsMinTouch: Int = 10,
+  fsTreeConfig: FSTreeConfig,
   minifyCmd: Option[String] = None,
 ) {
   import Fuzzer.*
@@ -42,6 +39,8 @@ class Fuzzer(
   /** ECMAScript grammar */
   lazy val grammar = cfg.grammar
   lazy val scriptParser = cfg.scriptParser
+
+  val kFs = fsTreeConfig.maxSensitivity
 
   /** generated ECMAScript programs */
   lazy val result: Coverage =
@@ -220,14 +219,11 @@ class Fuzzer(
   /** coverage */
   val cov: Coverage =
     Coverage(
-      cfg,
-      kFs,
-      cp,
-      timeLimit,
-      Some(logDir),
-      proThreshold = proThreshold,
-      demThreshold = demThreshold,
-      fsMinTouch = fsMinTouch,
+      cfg = cfg,
+      cp = cp,
+      timeLimit = timeLimit,
+      logDir = Some(logDir),
+      fsTreeConfig = fsTreeConfig,
       minifyCmd = minifyCmd,
     )
 

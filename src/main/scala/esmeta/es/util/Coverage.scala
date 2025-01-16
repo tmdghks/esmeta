@@ -28,13 +28,10 @@ import scala.math.Ordering.Implicits.seqOrdering
 /** coverage measurement of cfg */
 case class Coverage(
   cfg: CFG,
-  kFs: Int = 0,
   cp: Boolean = false,
   timeLimit: Option[Int] = None,
   logDir: Option[String] = None, // TODO: use this
-  proThreshold: Double = chiSqDistTable("0.01"),
-  demThreshold: Double = chiSqDistTable("0.05"),
-  fsMinTouch: Int = 10,
+  fsTreeConfig: FSTreeConfig,
   minifyCmd: Option[String] = None,
 ) {
   import Coverage.{*, given}
@@ -42,22 +39,8 @@ case class Coverage(
   val jsonProtocol: JsonProtocol = JsonProtocol(cfg)
   import jsonProtocol.given
 
-  val fsTrie = new FSTreeWrapper(
-    config = FSTreeConfig(
-      maxSensitivity = kFs,
-      promotionThreshold = proThreshold,
-      demotionThreshold = demThreshold,
-      minTouch = fsMinTouch,
-    ),
-  )
-  // new FSTreeWrapper(
-  //   config = FSTrieConfig(
-  //     maxSensitivity = kFs,
-  //     promotionCriteria = proCrit,
-  //     demotionCriteria = demCrit,
-  //     minTouch = fsMinTouch,
-  //   ),
-  // )
+  val kFs = fsTreeConfig.maxSensitivity
+  val fsTrie = new FSTreeWrapper(config = fsTreeConfig)
 
   // minimal scripts
   def minimalScripts: Set[Script] = _minimalScripts
@@ -422,8 +405,13 @@ case class Coverage(
     lazy val getCondViewsId = orderedCondViews.zipWithIndex.toMap
     dumpJson(
       name = "constructor",
-      data =
-        CoverageConstructor(kFs, cp, timeLimit, proThreshold, demThreshold),
+      data = CoverageConstructor(
+        fsTreeConfig.maxSensitivity,
+        cp,
+        timeLimit,
+        fsTreeConfig.promotionThreshold,
+        fsTreeConfig.demotionThreshold,
+      ),
       filename = s"$baseDir/constructor.json",
       noSpace = false,
     )
@@ -538,10 +526,11 @@ case class Coverage(
       app :> "- node: " >> nodeCov
       app :> "- branch: " >> branchCov
     }
-    if (kFs > 0) (app :> "- sensitive coverage:").wrap("", "") {
-      app :> "- node: " >> nodeViewCov
-      app :> "- branch: " >> branchViewCov
-    }
+    if (fsTreeConfig.maxSensitivity > 0)
+      (app :> "- sensitive coverage:").wrap("", "") {
+        app :> "- node: " >> nodeViewCov
+        app :> "- branch: " >> branchViewCov
+      }
     app.toString
 
   /** extension for AST */
@@ -779,20 +768,18 @@ object Coverage {
   def fromLogSimpl(baseDir: String, cfg: CFG): Coverage =
     val jsonProtocol = JsonProtocol(cfg)
     import jsonProtocol.given
-    given fsTrieConfigDecoder: Decoder[FSTrieConfig] = deriveDecoder
+    given fsTrieConfigDecoder: Decoder[FSTreeConfig] = deriveDecoder
 
     def readJsonHere[T](json: String)(using Decoder[T]) =
       readJson[T](s"$baseDir/$json")
 
     val con: CoverageConstructor = readJsonHere("constructor.json")
-    val fsTrieConfig = readJsonHere[FSTrieConfig]("fstrie-config.json")
+    val fsTreeConfig = readJsonHere[FSTreeConfig]("fstrie-config.json")
     val cov = new Coverage(
-      cfg,
-      fsTrieConfig.maxSensitivity,
-      con.cp,
-      con.timeLimit,
-      proThreshold = fsTrieConfig.promotionCriteria,
-      demThreshold = fsTrieConfig.demotionCriteria,
+      cfg = cfg,
+      cp = con.cp,
+      timeLimit = con.timeLimit,
+      fsTreeConfig = fsTreeConfig,
     )
     cov.fsTrie.replaceRootFromFile(f"$baseDir/fstrie-root.json")
     cov.fsTrie.fixed = true

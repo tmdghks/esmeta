@@ -174,18 +174,22 @@ object BaseUtils {
   def shuffle[T](seq: Seq[T]) = rand.shuffle(seq)
 
   /** Chi-squared independence test for 2x2 contingency table */
-  def computeChiSq(aT: Long, aF: Long, bT: Long, bF: Long): Double = {
+  def computeChiSq(aT: Long, aF: Long, bT: Long, bF: Long): (Double, Double) = {
     val n = aT + aF + bT + bF
     val eAT = (aT + aF) * (aT + bT) / n.toDouble
     val eAF = (aT + aF) * (aF + bF) / n.toDouble
     val eBT = (bT + bF) * (aT + bT) / n.toDouble
     val eBF = (bT + bF) * (aF + bF) / n.toDouble
-    if eAT == 0 || eAF == 0 || eBT == 0 || eBF == 0 then 0
+    if eAT == 0 || eAF == 0 || eBT == 0 || eBF == 0 then (0, 1)
     else
-      (aT - eAT) * (aT - eAT) / eAT +
-      (aF - eAF) * (aF - eAF) / eAF +
-      (bT - eBT) * (bT - eBT) / eBT +
-      (bF - eBF) * (bF - eBF) / eBF
+      val chiSq =
+        (aT - eAT) * (aT - eAT) / eAT +
+        (aF - eAF) * (aF - eAF) / eAF +
+        (bT - eBT) * (bT - eBT) / eBT +
+        (bF - eBF) * (bF - eBF) / eBF
+      val oddsRatio = (aT * bF) / (aF * bT).toDouble
+      (chiSq, oddsRatio)
+
   }
 
   val chiSqDistTable = Map(

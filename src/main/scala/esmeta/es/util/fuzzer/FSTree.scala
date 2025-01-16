@@ -9,9 +9,9 @@ import esmeta.util.SystemUtils.*
 object FSTreeWrapper:
   def fromDir(baseDir: String, fixed: Boolean): FSTreeWrapper =
     given fsTreeConfigDecoder: Decoder[FSTreeConfig] = deriveDecoder
-    val config = readJson[FSTreeConfig](f"$baseDir/fstree-config.json")
+    val config = readJson[FSTreeConfig](f"$baseDir/fstrie-config.json")
     val fsTrieWrapper = FSTreeWrapper(config, fixed = fixed)
-    fsTrieWrapper.replaceRootFromFile(f"$baseDir/fstree-root.json")
+    fsTrieWrapper.replaceRootFromFile(f"$baseDir/fstrie-root.json")
     fsTrieWrapper
 
   def debug: Unit =
@@ -62,8 +62,8 @@ class FSTreeWrapper(
   val fixedSensMap = MMap.empty[List[String], Int]
   var root: FSTree = FSTree(status = FSTreeStatus.Noticed, depth = 0)
 
-  var sensDistr: MMap[Int, Int] =
-    MMap.from(0 to config.maxSensitivity map (_ -> 0))
+  def sensDistr: Map[Int, Int] =
+    root.stacks.groupBy(_.size).transform((_, v) => v.size)
 
   private def computeFeatureChiSq(
     hits: Long,
@@ -76,7 +76,8 @@ class FSTreeWrapper(
     else
       val absentHits = pHits - hits
       val absentMisses = pMisses - misses
-      val chiSq = computeChiSq(hits, misses, absentHits, absentMisses)
+      val (chiSq, oddsRatio) =
+        computeChiSq(hits, misses, absentHits, absentMisses)
       assert(
         chiSq >= 0,
         f"Score for rootHits: $pHits, rootMisses: $pMisses, hits: $hits, misses: $misses is negative: $chiSq",
@@ -85,7 +86,10 @@ class FSTreeWrapper(
         chiSq.isFinite,
         f"Score for rootHits: $pHits, rootMisses: $pMisses, hits: $hits, misses: $misses is not finite: $chiSq",
       )
-      if (hits + misses < config.minTouch) 0 else chiSq
+      if (
+        hits + misses < config.minTouch && (oddsRatio <= 1 || !config.oneSided)
+      ) 0
+      else chiSq
   }
 
   /** Insert feature stacks from a single script into the tree. The script
@@ -247,17 +251,6 @@ class FSTreeWrapper(
                 pHits = node.parentHits,
                 pMisses = node.parentMisses,
               )
-            // if node.promotables == 0 then
-            //   computeFeatureChiSq(
-            //     hits = node.hits,
-            //     misses = node.misses,
-            //     pHits = node.parentHits,
-            //     pMisses = node.parentMisses,
-            //   )
-            // else
-            //   node.children.valuesIterator
-            //     .map(child => child.chiSqValue * child.promotables)
-            //     .sum / node.promotables
             case Ignored => ()
           }
           assert(
@@ -277,7 +270,6 @@ class FSTreeWrapper(
           case Noticed if node.chiSqValue < config.demotionThreshold =>
             node.foreachFromRoot { child =>
               child.status = Ignored
-              if child.status == Noticed then sensDistr(child.depth) -= 1
               child.promotables = 0
             }
           case _ => ()
@@ -294,7 +286,6 @@ class FSTreeWrapper(
             }
           case Promotable if node.chiSqValue > config.promotionThreshold =>
             node.status = Noticed
-            sensDistr(node.depth) += 1
             node.children.valuesIterator.foreach { child =>
               child.status = Promotable
             }
@@ -360,42 +351,41 @@ class FSTreeWrapper(
 
     private def touches: Long = hits + misses
 
-    def stacks = stacksSuppl(Nil, Set.empty)
+    def stacks = stacksSuppl(Nil)
 
     private def stacksSuppl(
       currStack: List[String],
-      acc: Set[List[String]],
     ): Set[List[String]] =
-      if children.isEmpty then acc + currStack
-      else if (status == Promotable) || (status == Ignored) then acc
+      if children.isEmpty then Set(currStack)
+      else if (status == Promotable) || (status == Ignored) then Set.empty
       else
         children.flatMap {
           case (k, v) =>
-            v.stacksSuppl(currStack :+ k, acc)
+            v.stacksSuppl(currStack :+ k)
         }.toSet + currStack
 
     def stacksWithScores: Map[List[String], Double] =
-      stacksWithScoresSuppl(Nil, Map.empty)
+      stacksWithScoresSuppl(Nil)
 
     def stacksWithScoresSuppl(
       currStack: List[String],
-      acc: Map[List[String], Double],
     ): Map[List[String], Double] =
-      if children.isEmpty then acc + (currStack -> chiSqValue)
-      else if (status == Promotable) || (status == Ignored) then acc
+      if children.isEmpty then Map(currStack -> chiSqValue)
+      else if (status == Promotable) || (status == Ignored) then Map.empty
       else
         children.flatMap {
           case (k, v) =>
-            v.stacksWithScoresSuppl(currStack :+ k, acc)
+            v.stacksWithScoresSuppl(currStack :+ k)
         }.toMap + (currStack -> chiSqValue)
   }
 }
 
 case class FSTreeConfig(
-  promotionThreshold: Double,
-  demotionThreshold: Double,
+  promotionThreshold: Double = chiSqDistTable("0.01"),
+  demotionThreshold: Double = chiSqDistTable("0.05"),
   maxSensitivity: Int = 3,
   minTouch: Int = 10,
+  oneSided: Boolean = true,
 )
 
 /** Status of a node in the tree

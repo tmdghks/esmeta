@@ -7,7 +7,7 @@ import esmeta.CommandConfig
 import esmeta.util.*
 import esmeta.util.BaseUtils.*
 import esmeta.spec.util.GrammarGraph
-import esmeta.es.util.fuzzer.Fuzzer
+import esmeta.es.util.fuzzer.{Fuzzer, MinifyFuzzer, FSTreeConfig}
 import esmeta.js.minifier.Minifier
 import esmeta.injector.Injector
 import scala.util.*
@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.parallel.CollectionConverters._
 import esmeta.util.SystemUtils.*
 import esmeta.es.util.ValidityChecker
-import esmeta.es.util.fuzzer.MinifyFuzzer
 import esmeta.ir.Op
 
 case object MinifyFuzz extends Phase[CFG, Coverage] {
@@ -41,12 +40,15 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       timeLimit = config.timeLimit,
       trial = config.trial,
       duration = config.duration,
-      kFs = config.kFs,
       cp = config.cp,
       init = config.init,
-      proThreshold = config.proThreshold,
-      demThreshold = config.demThreshold,
-      fsMinTouch = config.fsMinTouch,
+      fsTreeConfig = FSTreeConfig(
+        maxSensitivity = config.kFs,
+        promotionThreshold = config.proThreshold,
+        demotionThreshold = config.demThreshold,
+        minTouch = config.fsMinTouch,
+        oneSided = config.oneSided,
+      ),
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
       onlineTest = config.onlineTest,
@@ -146,6 +148,11 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       "set the minimum touch for feature sensitivity (default: 10).",
     ),
     (
+      "two-sided",
+      BoolOption(c => c.oneSided = false),
+      "turn on the two-sided mode for selective feature sensitivity (default: one-sided).",
+    ),
+    (
       "keep-bugs",
       BoolOption(c => c.keepBugs = true),
       "keep the bugs in the generated programs (default: false).",
@@ -176,6 +183,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var proThreshold: Double = chiSqDistTable("0.01"),
     var demThreshold: Double = chiSqDistTable("0.05"),
     var fsMinTouch: Int = 10,
+    var oneSided: Boolean = true,
     var keepBugs: Boolean = false,
     var minifier: Option[String] = None,
     var onlineTest: Boolean = false,

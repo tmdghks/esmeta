@@ -6,6 +6,7 @@ import esmeta.util.BaseUtils.computeChiSq
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import esmeta.util.SystemUtils.*
 
+/** DEPRECATED: Use FSTreeWrapper instead. */
 object FSTrieWrapper:
   def fromDir(baseDir: String, fixed: Boolean): FSTrieWrapper =
     given fsTrieConfigDecoder: Decoder[FSTrieConfig] = deriveDecoder
@@ -70,7 +71,7 @@ class FSTrieWrapper(
   ): Double = {
     val absentHits = pHits - hits
     val absentMisses = pMisses - misses
-    val score = computeChiSq(hits, misses, absentHits, absentMisses)
+    val (score, _) = computeChiSq(hits, misses, absentHits, absentMisses)
     assert(
       score >= 0,
       f"Score for rootHits: $pHits, rootMisses: $pMisses, hits: $hits, misses: $misses is negative: $score",
