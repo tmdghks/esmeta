@@ -23,7 +23,9 @@ import esmeta.util.BaseUtils.chiSqDistTable
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import scala.collection.mutable.{Map => MMap}
 
-import scala.math.Ordering.Implicits.seqOrdering
+import scala.concurrent.{Future, Await}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /** coverage measurement of cfg */
 case class Coverage(
@@ -201,6 +203,12 @@ case class Coverage(
     MMap[Script, Set[NodeOrCondView]],
     MMap[Script, Set[NodeOrCondView]],
   ) =
+    val isMinifierHitOptFuture = Future {
+      if (isSelective)
+        Some(Minifier.checkMinifyDiff(strictCode, minifyCmd))
+      else None
+    }
+
     val Script(code, _, _, _, _) = script
     val initSt = cfg.init.from(code)
     val finalSt = interp.result
@@ -222,15 +230,6 @@ case class Coverage(
         .flatMap(_.view)
         .map(v => (v._2 :: v._1).map(_.func.name))
 
-    val isMinifierHitOpt =
-      if (isSelective)
-        Some(Minifier.checkMinifyDiff(strictCode, minifyCmd))
-      else None
-
-    isMinifierHitOpt match
-      case Some(true)  => fsTrie.touchWithHit(rawStacks)
-      case Some(false) => fsTrie.touchWithMiss(rawStacks)
-      case _           => /* do nothing */
     // update node coverage
     for ((rawNodeView, nearest) <- interp.touchedNodeViews)
       // cut out features TODO: do this in the interpreter (Kanguk Lee)
@@ -274,6 +273,12 @@ case class Coverage(
           kickedScripts(origScript) += condView
         case Some(blockScript) => blockingScripts(blockScript) += condView
 
+    val isMinifierHitOpt = Await.result(isMinifierHitOptFuture, Duration.Inf)
+
+    isMinifierHitOpt match
+      case Some(true)  => fsTrie.touchWithHit(rawStacks)
+      case Some(false) => fsTrie.touchWithMiss(rawStacks)
+      case _           => /* do nothing */
     if (updated)
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(cfg, finalSt),

@@ -360,8 +360,7 @@ class FSTreeWrapper(
     private def stacksSuppl(
       currStack: List[String],
     ): Set[List[String]] =
-      if children.isEmpty then Set(currStack)
-      else if (status == Promotable) || (status == Ignored) then Set.empty
+      if (status == Promotable) || (status == Ignored) then Set.empty
       else
         children.flatMap {
           case (k, v) =>
@@ -374,8 +373,7 @@ class FSTreeWrapper(
     def stacksWithScoresSuppl(
       currStack: List[String],
     ): Map[List[String], Double] =
-      if children.isEmpty then Map(currStack -> chiSqValue)
-      else if (status == Promotable) || (status == Ignored) then Map.empty
+      if (status == Promotable) || (status == Ignored) then Map.empty
       else
         children.flatMap {
           case (k, v) =>

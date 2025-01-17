@@ -363,7 +363,8 @@ class Fuzzer(
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
     val mr = (cov.minifiableRate * 100 * 1000).round / 1000.0
     var row = Vector(iter, e, t, visited.size, pool.size, n, b, mr)
-    (1 to kFs).foreach { k => row ++= Vector(cov.fsTrie.sensDistr(k)) }
+    val sensDistr = cov.fsTrie.sensDistr
+    (1 to kFs).foreach { k => row ++= Vector(sensDistr(k)) }
     if (kFs > 0) row ++= Vector(nv, bv)
     row ++= Vector(tc)
     if (kFs > 0) row ++= Vector(tcv)
