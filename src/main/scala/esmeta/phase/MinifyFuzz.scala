@@ -48,6 +48,10 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
         demotionThreshold = config.demThreshold,
         minTouch = config.fsMinTouch,
         oneSided = config.oneSided,
+        isSelective = config.isSelectiveOpt
+          .getOrElse(
+            throw new Exception("sensitivity type is not set"),
+          ),
       ),
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
@@ -102,6 +106,20 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       "seed",
       NumOption((c, k) => c.seed = Some(k)),
       "set the specific seed for the random number generator (default: None).",
+    ),
+    (
+      "sens-type",
+      StrOption((c, s) =>
+        c.isSelectiveOpt = Some(
+          s match {
+            case "selective" => true
+            case "uniform"   => false
+            case _ =>
+              error("invalid sensitivity type: please set selective or uniform")
+          },
+        ),
+      ),
+      "set the sensitivity type: selective or uniform",
     ),
     (
       "cp",
@@ -178,6 +196,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var duration: Option[Int] = None,
     var seed: Option[Int] = None,
     var init: Option[String] = None,
+    var isSelectiveOpt: Option[Boolean] = None,
     var kFs: Int = 0,
     var cp: Boolean = false,
     var proThreshold: Double = chiSqDistTable("0.01"),

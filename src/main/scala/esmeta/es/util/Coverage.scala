@@ -40,6 +40,7 @@ case class Coverage(
   import jsonProtocol.given
 
   val kFs = fsTreeConfig.maxSensitivity
+  val isSelective = fsTreeConfig.isSelective
   val fsTrie = new FSTreeWrapper(config = fsTreeConfig)
 
   // minimal scripts
@@ -216,16 +217,20 @@ case class Coverage(
 
     val strictCode = USE_STRICT + code
 
-    val isMinifierHit = Minifier.checkMinifyDiff(strictCode, minifyCmd)
-
     val rawStacks =
       interp.touchedNodeViews.keys
         .flatMap(_.view)
         .map(v => (v._2 :: v._1).map(_.func.name))
 
-    if (isMinifierHit) then fsTrie.touchWithHit(rawStacks)
-    else fsTrie.touchWithMiss(rawStacks)
+    val isMinifierHitOpt =
+      if (isSelective)
+        Some(Minifier.checkMinifyDiff(strictCode, minifyCmd))
+      else None
 
+    isMinifierHitOpt match
+      case Some(true)  => fsTrie.touchWithHit(rawStacks)
+      case Some(false) => fsTrie.touchWithMiss(rawStacks)
+      case _           => /* do nothing */
     // update node coverage
     for ((rawNodeView, nearest) <- interp.touchedNodeViews)
       // cut out features TODO: do this in the interpreter (Kanguk Lee)
@@ -274,7 +279,7 @@ case class Coverage(
         ConformTest.createTest(cfg, finalSt),
         touchedNodeViews.keys,
         touchedCondViews.keys,
-        minifiable = Some(isMinifierHit),
+        minifiable = isMinifierHitOpt,
       )
 
     // TODO: impl checkWithBlocking using `blockingScripts`

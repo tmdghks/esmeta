@@ -19,6 +19,7 @@ object FSTreeWrapper:
       FSTreeConfig(
         promotionThreshold = chiSqDistTable("0.01"),
         demotionThreshold = chiSqDistTable("0.05"),
+        isSelective = true,
       ),
     )
     import tree.given
@@ -124,7 +125,8 @@ class FSTreeWrapper(
 
   def apply(stack: List[String]): Int =
     val tmpStack = stack.take(config.maxSensitivity)
-    if fixed then fixedSensMap.getOrElseUpdate(tmpStack, root(tmpStack))
+    if !config.isSelective then config.maxSensitivity
+    else if fixed then fixedSensMap.getOrElseUpdate(tmpStack, root(tmpStack))
     else root(tmpStack)
 
   given fSTreeEncoder: Encoder[FSTree] = deriveEncoder
@@ -386,6 +388,7 @@ case class FSTreeConfig(
   maxSensitivity: Int = 3,
   minTouch: Int = 10,
   oneSided: Boolean = true,
+  isSelective: Boolean = true,
 )
 
 /** Status of a node in the tree
