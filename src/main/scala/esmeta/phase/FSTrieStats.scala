@@ -27,6 +27,19 @@ case object FSTrieStats extends Phase[Unit, Unit] {
     }
     if config.out.isEmpty then println(stats.asJson)
     else dumpJson(stats, config.out.get)
+
+    val stacksWithProbs = trie.stacksWithProbs
+
+    val probStats = stacksWithProbs.toList.sortBy(_._2).groupBy(_._1.size)
+    if config.out.isDefined then dumpJson(probStats, "prob" + config.out.get)
+
+    for (size <- probStats.keys.toList.sorted) {
+      val stacks = probStats(size)
+      val over50 = stacks.count(_._2 > 0.5)
+      println(
+        s"Ratio of > 50 % stacks with size $size: ${over50.toDouble / stacks.size}",
+      )
+    }
     ()
 
   val defaultConfig: Config = Config()

@@ -88,7 +88,7 @@ class FSTreeWrapper(
         f"Score for rootHits: $pHits, rootMisses: $pMisses, hits: $hits, misses: $misses is not finite: $chiSq",
       )
       if (
-        hits + misses < config.minTouch && (oddsRatio <= 1 || !config.oneSided)
+        hits + misses < config.minTouch || (oddsRatio <= 1 && config.oneSided)
       ) 0
       else chiSq
   }
@@ -140,6 +140,8 @@ class FSTreeWrapper(
   def stacks: Set[List[String]] = root.stacks
 
   def stacksWithScores: Map[List[String], Double] = root.stacksWithScores
+
+  def stacksWithProbs = root.stacksWithProbs
 
   /** A tree that stores the status of each node in the tree, and calculates the
     * score of each node based on the hits and misses of the node and its
@@ -379,6 +381,20 @@ class FSTreeWrapper(
           case (k, v) =>
             v.stacksWithScoresSuppl(currStack :+ k)
         }.toMap + (currStack -> chiSqValue)
+
+    def stacksWithProbs = stacksWithProbsSuppl(Nil)
+
+    def stacksWithProbsSuppl(
+      currStack: List[String],
+    ): Map[List[String], Double] =
+      if children.isEmpty then
+        Map(currStack -> (hits.toDouble / (hits + misses)))
+      else if (status == Promotable) || (status == Ignored) then Map.empty
+      else
+        children.flatMap {
+          case (k, v) =>
+            v.stacksWithProbsSuppl(currStack :+ k)
+        }.toMap + (currStack -> (hits.toDouble / (hits + misses)))
   }
 }
 
