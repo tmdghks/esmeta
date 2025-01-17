@@ -45,7 +45,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
         kFs = config.kFs,
         cp = config.cp,
         init = config.init,
-        logTranspilable = config.logRranspilable,
+        logTranspilable = config.logTranspilable,
       )
 
       for (dirname <- config.out) cov.dumpToWithDetail(dirname)
@@ -62,7 +62,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
         kFs = config.kFs,
         cp = config.cp,
         init = config.init,
-        logTranspilable = config.logRranspilable,
+        logTranspilable = config.logTranspilable,
       )
 
       for (dirname <- config.out) cov.dumpToWithDetail(dirname)
@@ -153,6 +153,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var kFs: Int = 0,
     var cp: Boolean = false,
     var originalTemporal: Boolean = false,
-    var logRranspilable: Boolean = false,
+    var logTranspilable: Boolean = false,
   )
 }

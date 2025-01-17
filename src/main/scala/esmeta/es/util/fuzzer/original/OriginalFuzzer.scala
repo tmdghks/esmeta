@@ -42,6 +42,7 @@ class OriginalFuzzer(
   init: Option[String] = None,
   kFs: Int = 0,
   cp: Boolean = false,
+  logTranspilable: Boolean = false,
 ) {
   import OriginalFuzzer.*
 
@@ -230,6 +231,7 @@ class OriginalFuzzer(
       cp,
       timeLimit,
       Some(logDir),
+      logTranspilable
     )
 
   /** target selector */

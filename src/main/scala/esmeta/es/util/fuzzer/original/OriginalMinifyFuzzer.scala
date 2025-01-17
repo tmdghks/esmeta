@@ -49,6 +49,7 @@ object OriginalMinifyFuzzer {
     init: Option[String] = None,
     kFs: Int = 0,
     cp: Boolean = false,
+    logTranspilable: Boolean = false,
   ): Coverage = new OriginalMinifyFuzzer(
     cfg,
     logInterval,
@@ -60,6 +61,7 @@ object OriginalMinifyFuzzer {
     init,
     kFs,
     cp,
+    logTranspilable,
   ).result
 
   val logDir: String = s"$MINIFY_FUZZ_LOG_DIR/fuzz-$dateStr"
@@ -77,6 +79,7 @@ class OriginalMinifyFuzzer(
   init: Option[String] = None,
   kFs: Int = 0,
   cp: Boolean = false,
+  logTranspilable: Boolean = false,
 ) {
   import OriginalMinifyFuzzer.*
 
@@ -121,6 +124,7 @@ class OriginalMinifyFuzzer(
     kFs = kFs,
     cp = cp,
     init = init,
+    logTranspilable = logTranspilable,
   ) {
     override lazy val logDir = OriginalMinifyFuzzer.logDir
     override lazy val symlink = OriginalMinifyFuzzer.symlink

@@ -362,30 +362,38 @@ class Fuzzer(
     val tc = cov.targetCondViews.size
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
 
-    var row = Vector(
-      iter,
-      e,
-      t,
-      visited.size,
-      pool.size,
-      n,
-      b,
-    )
+    // if logTranspilable is false, these value will be all zero
+    lazy val swcMr = (cov.swcMinifiableRate * 100 * 1000).round / 1000.0
+    lazy val terserMr = (cov.terserMinifiableRate * 100 * 1000).round / 1000.0
+    lazy val swcES2015Tr =
+      (cov.swcES2015TRanspilableRate * 100 * 1000).round / 1000.0
+    lazy val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
 
-    // this part is for logging transpilable rates
-    if (logTranspilable)
-      val swcMr = (cov.swcMinifiableRate * 100 * 1000).round / 1000.0
-      val terserMr = (cov.terserMinifiableRate * 100 * 1000).round / 1000.0
-      val swcES2015Tr =
-        (cov.swcES2015TRanspilableRate * 100 * 1000).round / 1000.0
-      val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
-
-      row ++= Vector(
-        swcMr,
-        terserMr,
-        swcES2015Tr,
-        babelTr,
-      )
+    var row =
+      if (logTranspilable) then
+        Vector(
+          iter,
+          e,
+          t,
+          visited.size,
+          pool.size,
+          n,
+          b,
+          swcMr,
+          terserMr,
+          swcES2015Tr,
+          babelTr,
+        )
+      else
+        Vector(
+          iter,
+          e,
+          t,
+          visited.size,
+          pool.size,
+          n,
+          b,
+        )
 
     if (kFs > 0) row ++= Vector(nv, bv)
     row ++= Vector(tc)
