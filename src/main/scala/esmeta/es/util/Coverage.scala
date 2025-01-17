@@ -27,6 +27,7 @@ import scala.math.Ordering.Implicits.seqOrdering
 import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import esmeta.phase.MinifyFuzz
 
 /** coverage measurement of cfg */
 case class Coverage(
@@ -194,16 +195,16 @@ case class Coverage(
 
   // check with both blocking and kicked scripts
   // NOTE: MinifyFuzzer uses it
-  def checkWithDetails(
+  def checkWithTree(
     script: Script,
     interp: Interp,
   ): (
     State,
     Boolean,
     Boolean,
-    MMap[Script, Set[NodeOrCondView]],
-    MMap[Script, Set[NodeOrCondView]],
   ) =
+    val startTime = System.currentTimeMillis()
+
     val Script(code, _, _, _, _) = script
     val strictCode = USE_STRICT + code
     val isMinifierHitOptFuture = Future {
@@ -217,10 +218,6 @@ case class Coverage(
 
     var covered = false
     var updated = false
-    var blockingScripts: MMap[Script, Set[NodeOrCondView]] =
-      MMap.empty.withDefaultValue(Set.empty)
-    var kickedScripts: MMap[Script, Set[NodeOrCondView]] =
-      MMap.empty.withDefaultValue(Set.empty)
 
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()
     var touchedCondViews: Map[CondView, Option[Nearest]] = Map()
@@ -248,8 +245,7 @@ case class Coverage(
         case Some(originalScript) if originalScript.code.length > code.length =>
           update(nodeView, script)
           updated = true
-          kickedScripts(originalScript) += nodeView
-        case Some(blockScript) => blockingScripts(blockScript) += nodeView
+        case Some(blockScript) => ()
 
     // update branch coverage
     for ((rawCondView, nearest) <- interp.touchedCondViews)
@@ -270,15 +266,24 @@ case class Coverage(
         case Some(origScript) if origScript.code.length > code.length =>
           update(condView, nearest, script)
           updated = true
-          kickedScripts(origScript) += condView
-        case Some(blockScript) => blockingScripts(blockScript) += condView
+        case Some(blockScript) => ()
+
+    val midTime1 = System.currentTimeMillis()
 
     val isMinifierHitOpt = Await.result(isMinifierHitOptFuture, Duration.Inf)
+
+    val midTime2 = System.currentTimeMillis()
 
     isMinifierHitOpt match
       case Some(true)  => fsTrie.touchWithHit(rawStacks)
       case Some(false) => fsTrie.touchWithMiss(rawStacks)
       case _           => /* do nothing */
+    val midTime3 = System.currentTimeMillis()
+
+    MinifyFuzz.sampler("checkWithDetails.init") += midTime1 - startTime
+    MinifyFuzz.sampler("checkWithDetails.cli") += midTime2 - midTime1
+    MinifyFuzz.sampler("checkWithDetails.tree") += midTime3 - midTime2
+
     if (updated)
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(cfg, finalSt),
@@ -288,7 +293,7 @@ case class Coverage(
       )
 
     // TODO: impl checkWithBlocking using `blockingScripts`
-    (finalSt, updated, covered, blockingScripts, kickedScripts)
+    (finalSt, updated, covered)
 
   // not updating fstrie
   def checkWithBlockings(

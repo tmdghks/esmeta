@@ -25,6 +25,7 @@ import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import io.circe.Json
 import java.util.concurrent.atomic.AtomicInteger
 import esmeta.mutator.TracerExprMutator
+import esmeta.phase.MinifyFuzz
 
 object MinifyFuzzer {
   def apply(
@@ -135,46 +136,37 @@ class MinifyFuzzer(
 
     // adjust weight for active random fuzzing
     override val selector: TargetSelector = WeightedSelector(
-      RandomSelector -> 8,
-      BranchSelector -> 2,
+      RandomSelector -> 2,
+      BranchSelector -> 8,
     )
 
-    override def add(code: String, info: CandInfo): Boolean = handleResult(
-      Try {
-        if (info.visited)
-          fail("ALREADY VISITED")
-        visited += code
-        if (info.invalid)
-          fail("INVALID PROGRAM")
-        val tempScript = toScript(code)
-        val interp = info.interp.getOrElse(fail("Interp Fail"))
-        val finalState = interp.result
-        val script = tempScript.copy(
-          isBug = minifyTestOnline(finalState, code),
-        )
-        val (_, updated, covered, blockings, kicked) = cov.checkWithDetails(
-          script,
-          interp,
-        )
-        if (keepBugs)
-          if (script.isBug)
-            blockings.foreach {
-              case (blockingScript, views) =>
-                bugBlockingMap(code) += (blockingScript.code -> views)
-            }
-          kicked.foreach {
-            case (kickedScript, views) =>
-              if (kickedScript.isBug)
-                bugKickedMap(kickedScript.code) += (code -> views)
-          }
-        val filtered = interp.coveredAOs intersect filteredAOs
-        if (filtered.isEmpty && onlineTest)
-          minifyTest(iter, finalState, code, covered)
-        // else println(s"PASS minifier check due to: $filtered")
-        if (!updated) fail("NO UPDATE")
-        covered
-      },
-    )
+    override def add(code: String, info: CandInfo): Boolean =
+      val startTime = System.currentTimeMillis()
+      val temp = handleResult(
+        Try {
+          if (info.visited)
+            fail("ALREADY VISITED")
+          visited += code
+          if (info.invalid)
+            fail("INVALID PROGRAM")
+          val tempScript = toScript(code)
+          val interp = info.interp.getOrElse(fail("Interp Fail"))
+          val finalState = interp.result
+          val (_, updated, covered, blockings, kicked) = cov.checkWithTree(
+            toScript(code),
+            interp,
+          )
+          // val filtered = interp.coveredAOs intersect filteredAOs
+          // if (filtered.isEmpty && onlineTest)
+          //   minifyTest(iter, finalState, code, covered)
+          // else println(s"PASS minifier check due to: $filtered")
+          if (!updated) fail("NO UPDATE")
+          covered
+        },
+      )
+      MinifyFuzz
+        .sampler("MinifyFuzzer.add") += System.currentTimeMillis() - startTime
+      temp
 
     override def logging: Unit =
       val jsonProtocol: JsonProtocol = JsonProtocol(cfg)

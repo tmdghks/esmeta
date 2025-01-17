@@ -16,6 +16,7 @@ import esmeta.injector.ReturnInjector
 import esmeta.interpreter.Interpreter
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.parallel.CollectionConverters._
+import scala.collection.mutable.Map as MMap
 import esmeta.util.SystemUtils.*
 import esmeta.es.util.ValidityChecker
 import esmeta.ir.Op
@@ -23,6 +24,8 @@ import esmeta.ir.Op
 case object MinifyFuzz extends Phase[CFG, Coverage] {
   val name = "minify-fuzz"
   val help = "generate ECMAScript programs for fuzzing minifier"
+
+  val sampler = MMap.empty[String, Long].withDefault(_ => 0)
 
   def apply(
     cfg: CFG,

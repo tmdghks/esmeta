@@ -20,6 +20,8 @@ import scala.collection.mutable.{ListBuffer, Map => MMap}
 import scala.collection.parallel.CollectionConverters._
 import scala.util.*
 
+import esmeta.phase.MinifyFuzz
+
 /** ECMAScript program fuzzer with ECMA-262 */
 class Fuzzer(
   cfg: CFG,
@@ -133,8 +135,10 @@ class Fuzzer(
       update(selectorName, selectorStat, result)
       update(mutatorName, mutatorStat, result)
 
-    val duration = Time(System.currentTimeMillis - startTime)
+    val tmp = System.currentTimeMillis() - startTime
+    val duration = Time(tmp)
     debugging(s"iter/end: $iter - $duration")
+    MinifyFuzz.sampler("Fuzzer.fuzz") += tmp
 
   /** Case class to hold the information about a candidate */
   case class CandInfo(
@@ -262,6 +266,7 @@ class Fuzzer(
       BuiltinSynthesizer(cfg.spec.algorithms).initPool
         .map(BuiltinSynthesizer(cfg.spec.algorithms).name -> _),
     )
+    .take(42)
 
   lazy val logDir: String = s"$FUZZ_LOG_DIR/fuzz-$dateStr"
   lazy val symlink: String = s"$FUZZ_LOG_DIR/recent"
@@ -351,6 +356,14 @@ class Fuzzer(
 
   // logging
   def logging: Unit =
+    println()
+    for {
+      (name, millis) <- MinifyFuzz.sampler.toList.sortBy(_._2).reverse
+    } {
+      val duration = Time(millis)
+      println(f"Sampler: $name%-30s: $duration")
+    }
+
     val startTime = System.currentTimeMillis
 
     val n = cov.nodeCov
