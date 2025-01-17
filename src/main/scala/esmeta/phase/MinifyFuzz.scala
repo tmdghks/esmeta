@@ -45,6 +45,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
         kFs = config.kFs,
         cp = config.cp,
         init = config.init,
+        logTranspilable = config.logRranspilable,
       )
 
       for (dirname <- config.out) cov.dumpToWithDetail(dirname)
@@ -61,6 +62,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
         kFs = config.kFs,
         cp = config.cp,
         init = config.init,
+        logTranspilable = config.logRranspilable,
       )
 
       for (dirname <- config.out) cov.dumpToWithDetail(dirname)
@@ -132,6 +134,11 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       BoolOption(c => c.originalTemporal = true),
       "use the original temporal mutator and synthesizer (default: false).",
     ),
+    (
+      "log-transpilable",
+      BoolOption(c => c.logTranspilable = true),
+      "log transpilable code (default: false).",
+    ),
   )
   case class Config(
     var log: Boolean = false,
@@ -146,5 +153,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var kFs: Int = 0,
     var cp: Boolean = false,
     var originalTemporal: Boolean = false,
+    var logRranspilable: Boolean = false,
   )
 }

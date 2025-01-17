@@ -33,6 +33,7 @@ object MinifyFuzzer {
     init: Option[String] = None,
     kFs: Int = 0,
     cp: Boolean = false,
+    logTranspilable: Boolean = false,
   ): Coverage = new MinifyFuzzer(
     cfg,
     logInterval,
@@ -44,6 +45,7 @@ object MinifyFuzzer {
     init,
     kFs,
     cp,
+    logTranspilable,
   ).result
 
   val logDir: String = s"$MINIFY_FUZZ_LOG_DIR/fuzz-$dateStr"
@@ -61,6 +63,7 @@ class MinifyFuzzer(
   init: Option[String] = None,
   kFs: Int = 0,
   cp: Boolean = false,
+  logTranspilable: Boolean = false,
 ) {
   import MinifyFuzzer.*
 

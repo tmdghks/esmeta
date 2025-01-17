@@ -24,6 +24,7 @@ case class Coverage(
   cp: Boolean = false,
   timeLimit: Option[Int] = None,
   logDir: Option[String] = None, // TODO: use this
+  logTranspilable: Boolean = false,
 ) {
   import Coverage.{*, given}
 
@@ -123,11 +124,18 @@ case class Coverage(
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()
     var touchedCondViews: Map[CondView, Option[Nearest]] = Map()
 
-    val isSwcMinifiable = Minifier.checkMinifyDiff(code, Some("swc"))
-    val isTerserMinifiable = Minifier.checkMinifyDiff(code, Some("terser"))
-    val isSwcES2015Transpilable =
-      Minifier.checkMinifyDiff(code, Some("swcES2015"))
-    val isBabelTranspilable = Minifier.checkMinifyDiff(code, Some("babel"))
+    if (logTranspilable)
+      val isSwcMinifiable = Minifier.checkMinifyDiff(code, Some("swc"))
+      val isTerserMinifiable = Minifier.checkMinifyDiff(code, Some("terser"))
+      val isSwcES2015Transpilable =
+        Minifier.checkMinifyDiff(code, Some("swcES2015"))
+      val isBabelTranspilable = Minifier.checkMinifyDiff(code, Some("babel"))
+
+    else
+      val isSwcMinifiable = false
+      val isTerserMinifiable = false
+      val isSwcES2015Transpilable = false
+      val isBabelTranspilable = false
 
     // update node coverage
     for ((nodeView, nearest) <- interp.touchedNodeViews)

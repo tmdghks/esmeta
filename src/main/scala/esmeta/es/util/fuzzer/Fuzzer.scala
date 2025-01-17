@@ -32,6 +32,7 @@ class Fuzzer(
   init: Option[String] = None,
   kFs: Int = 0,
   cp: Boolean = false,
+  logTranspilable: Boolean = false,
 ) {
   import Fuzzer.*
 
@@ -220,6 +221,7 @@ class Fuzzer(
       cp,
       timeLimit,
       Some(logDir),
+      logTranspilable,
     )
 
   /** target selector */
@@ -312,11 +314,14 @@ class Fuzzer(
       "minimal(#)",
       "node(#)",
       "branch(#)",
-      "swc-transpilable(%)",
-      "terser-transpilable(%)",
-      "swcES2015-transpilable(%)",
-      "babel-transpilable(%)",
     )
+    if (logTranspilable)
+      header ++= Vector(
+        "swc-transpilable(%)",
+        "terser-transpilable(%)",
+        "swcES2015-transpilable(%)",
+        "babel-transpilable(%)",
+      )
     if (kFs > 0) header ++= Vector(s"sens-node(#)", s"sens-branch(#)")
     header ++= Vector("target-conds(#)")
     if (kFs > 0) header ++= Vector(s"sens-target-conds(#)")
@@ -356,11 +361,6 @@ class Fuzzer(
     val bv = cov.branchViewCov
     val tc = cov.targetCondViews.size
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
-    val swcMr = (cov.swcMinifiableRate * 100 * 1000).round / 1000.0
-    val terserMr = (cov.terserMinifiableRate * 100 * 1000).round / 1000.0
-    val swcES2015Tr =
-      (cov.swcES2015TRanspilableRate * 100 * 1000).round / 1000.0
-    val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
 
     var row = Vector(
       iter,
@@ -370,11 +370,23 @@ class Fuzzer(
       pool.size,
       n,
       b,
-      swcMr,
-      terserMr,
-      swcES2015Tr,
-      babelTr,
     )
+
+    // this part is for logging transpilable rates
+    if (logTranspilable)
+      val swcMr = (cov.swcMinifiableRate * 100 * 1000).round / 1000.0
+      val terserMr = (cov.terserMinifiableRate * 100 * 1000).round / 1000.0
+      val swcES2015Tr =
+        (cov.swcES2015TRanspilableRate * 100 * 1000).round / 1000.0
+      val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
+
+      row ++= Vector(
+        swcMr,
+        terserMr,
+        swcES2015Tr,
+        babelTr,
+      )
+
     if (kFs > 0) row ++= Vector(nv, bv)
     row ++= Vector(tc)
     if (kFs > 0) row ++= Vector(tcv)
