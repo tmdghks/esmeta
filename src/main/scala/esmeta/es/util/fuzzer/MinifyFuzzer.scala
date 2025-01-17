@@ -109,12 +109,6 @@ class MinifyFuzzer(
     override lazy val logDir = MinifyFuzzer.logDir
     override lazy val symlink = MinifyFuzzer.symlink
 
-    // adjust weight for active random fuzzing
-    override val selector: TargetSelector = WeightedSelector(
-      RandomSelector -> 8,
-      BranchSelector -> 2,
-    )
-
     override def add(code: String, info: CandInfo): Boolean = handleResult(
       Try {
         if (info.visited)
@@ -126,9 +120,10 @@ class MinifyFuzzer(
         val interp = info.interp.getOrElse(fail("Interp Fail"))
         val finalState = interp.result
         val (_, updated, covered) = cov.check(script, interp)
-        val filtered = interp.coveredAOs intersect filteredAOs
-        if (filtered.isEmpty)
-          minifyTest(iter, finalState, code, covered)
+        // temporally disabled 
+        // val filtered = interp.coveredAOs intersect filteredAOs
+        // if (filtered.isEmpty)
+        //   minifyTest(iter, finalState, code, covered)
         // else println(s"PASS minifier check due to: $filtered")
         if (!updated) fail("NO UPDATE")
         covered
