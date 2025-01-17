@@ -152,7 +152,7 @@ class MinifyFuzzer(
           val tempScript = toScript(code)
           val interp = info.interp.getOrElse(fail("Interp Fail"))
           val finalState = interp.result
-          val (_, updated, covered, blockings, kicked) = cov.checkWithTree(
+          val (_, updated, covered) = cov.checkWithTree(
             toScript(code),
             interp,
           )
