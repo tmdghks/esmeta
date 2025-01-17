@@ -23,6 +23,7 @@ import esmeta.util.BaseUtils.chiSqDistTable
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import scala.collection.mutable.{Map => MMap}
 
+import scala.math.Ordering.Implicits.seqOrdering
 import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -203,13 +204,14 @@ case class Coverage(
     MMap[Script, Set[NodeOrCondView]],
     MMap[Script, Set[NodeOrCondView]],
   ) =
+    val Script(code, _, _, _, _) = script
+    val strictCode = USE_STRICT + code
     val isMinifierHitOptFuture = Future {
       if (isSelective)
         Some(Minifier.checkMinifyDiff(strictCode, minifyCmd))
       else None
     }
 
-    val Script(code, _, _, _, _) = script
     val initSt = cfg.init.from(code)
     val finalSt = interp.result
 
@@ -222,8 +224,6 @@ case class Coverage(
 
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()
     var touchedCondViews: Map[CondView, Option[Nearest]] = Map()
-
-    val strictCode = USE_STRICT + code
 
     val rawStacks =
       interp.touchedNodeViews.keys
