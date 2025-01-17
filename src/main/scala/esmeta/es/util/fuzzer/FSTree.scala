@@ -64,7 +64,7 @@ class FSTreeWrapper(
   var root: FSTree = FSTree(status = FSTreeStatus.Noticed, depth = 0)
 
   def sensDistr: Map[Int, Int] =
-    root.stacks.groupBy(_.size).transform((_, v) => v.size)
+    root.stacks.groupBy(_.size).transform((_, v) => v.size).withDefault(_ => 0)
 
   private def computeFeatureChiSq(
     hits: Long,
