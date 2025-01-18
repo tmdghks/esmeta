@@ -43,7 +43,7 @@ class SimpleSynthesizer(
     "IdentifierName" -> "x",
     "NoSubstitutionTemplate" -> "``",
     "NullLiteral" -> "null",
-    "NumericLiteral" -> "42",
+    "NumericLiteral" -> "0",
     "PrivateIdentifier" -> "#x",
     "RegularExpressionLiteral" -> "/a/",
     "StringLiteral" -> "''",
@@ -195,6 +195,6 @@ class SimpleSynthesizer(
 
   // handle invalid code
   private def handleInvalid(code: String): String =
-    if (code.startsWith("{") && code.endsWith("} ;")) "let x = " + code
+    if (code.startsWith("{") && code.endsWith("} ;")) "var x = " + code
     else code
 }

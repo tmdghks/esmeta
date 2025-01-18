@@ -29,13 +29,13 @@ class BuiltinSynthesizer(
       case Getter(base) =>
         getString(base) :: (base match
           case Prototype(proto, prop) =>
-            List(s"let x = {}; Object.setPrototypeOf(x, $proto); x$prop;")
+            List(s"var x = {}; Object.setPrototypeOf(x, $proto); x$prop;")
           case _ => Nil
         )
       case Setter(base) =>
         getString(base) :: (base match
           case Prototype(proto, prop) =>
-            List(s"let x = {}; Object.setPrototypeOf(x, $proto); x$prop = 0;")
+            List(s"var x = {}; Object.setPrototypeOf(x, $proto); x$prop = 0;")
           case _ => Nil
         )
       case path =>
@@ -45,9 +45,9 @@ class BuiltinSynthesizer(
         val calls = for {
           argsLen <- Range(1, MAX_ARGS + 1).toList
           argsStr = List.fill(argsLen)("0").mkString("(", ", ", ")")
-        } yield s"let x = $pathStr.call$argsStr;"
+        } yield s"$pathStr.call$argsStr;"
         // construct without arguments
-        val construct = s"let x = new $pathStr;"
+        val construct = s"new $pathStr;"
         // constructs with arguments
         val constructs = for {
           argsLen <- Range(0, MAX_ARGS).toList
