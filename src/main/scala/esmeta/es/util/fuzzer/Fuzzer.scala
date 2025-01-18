@@ -383,7 +383,7 @@ class Fuzzer(
     if (kFs > 0) row ++= Vector(tcv)
     addRow(row)
     // dump coverage
-    cov.dumpToWithDetail(logDir, withMsg = (debug == ALL))
+    cov.dumpToWithDetail(logDir, withMsg = (debug == ALL), silent = true)
     dumpStat(mutator.names, mutatorStat, mutStatTsv)
 
     val duration = Time(System.currentTimeMillis - startTime)

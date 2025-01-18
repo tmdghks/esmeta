@@ -10,6 +10,10 @@ import esmeta.util.SystemUtils.*
 import java.util.concurrent.TimeoutException
 import esmeta.es.util.USE_STRICT
 
+import sttp.client4.*
+import java.net.URLEncoder
+import sttp.model.StatusCode
+
 object Minifier {
   val minifyCmd = Map(
     "swc" -> "minify-runner -v swc@1.4.6",
@@ -25,7 +29,7 @@ object Minifier {
   lazy val useSwc: Boolean = minifySwc(";").isSuccess
 
   private var hasWarned = false
-  private def warnUnspecified(): Unit =
+  def warnUnspecified(): Unit =
     if !hasWarned then
       println("No minifier specified. Using SWC as default.")
       hasWarned = true
@@ -103,4 +107,55 @@ object Minifier {
     } catch {
       case err => false
     }
+
+  def checkMinifyDiffSrv(code: String, cmd: Option[String]): Boolean =
+    try {
+      val diffResult = MinifyServer.queryDiff(code, cmd).split(LINE_SEP).last
+      if diffResult == "true" then true
+      else if diffResult == "false" then false
+      else {
+        throw new Exception(s"Invalid diff result: $diffResult")
+      }
+    } catch {
+      case err => false
+    }
+}
+
+object MinifyServer {
+  val serverUrl = "http://127.0.0.1:8282/"
+  val backend = DefaultSyncBackend()
+
+  def queryDiff(code: String, cmd: Option[String]): String = {
+    val version = cmd match
+      case Some("swc") | Some("Swc") | Some("swcES2015") | Some("SwcES2015") =>
+        "swc@1.4.6"
+      case Some("terser") | Some("Terser") => "terser@5.29.1"
+      case Some("babel") | Some("Babel")   => "babel@7.24.1"
+      case None =>
+        Minifier.warnUnspecified()
+        "swc@1.4.6"
+      case _ => throw new Exception("Invalid minifier specified.")
+
+    val encodedCode = URLEncoder.encode(code, "UTF-8")
+
+    val additionalOptions = cmd match
+      case Some("swcES2015") | Some("SwcES2015") =>
+        "&notcompress=true&target=es2015"
+      case _ => ""
+    val url =
+      s"$serverUrl?codeOrFilePath=$encodedCode&version=$version&diff=true" + additionalOptions
+    val request = basicRequest.get(uri"$url")
+
+    val response = request.send(backend)
+    val endTime = System.currentTimeMillis()
+
+    response.body match {
+      case Right(output) => output
+      case Left(error) =>
+        if response.code == StatusCode(400) then
+          println(s"MinifyServer Error: ${response.code} $error, with $code");
+          "false"
+        else "false"
+    }
+  }
 }

@@ -11,13 +11,7 @@ import esmeta.es.util.Coverage.Interp
 import esmeta.state.*
 import esmeta.util.*
 import esmeta.util.SystemUtils.*
-import esmeta.es.util.fuzzer.{
-  MinifyChecker,
-  FSTrieWrapper,
-  FSTrieConfig,
-  FSTreeWrapper,
-  FSTreeConfig,
-}
+import esmeta.es.util.fuzzer.{MinifyChecker, FSTreeWrapper, FSTreeConfig}
 import esmeta.js.minifier.Minifier
 import esmeta.util.BaseUtils.chiSqDistTable
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
@@ -45,6 +39,7 @@ case class Coverage(
 
   val kFs = fsTreeConfig.maxSensitivity
   val isSelective = fsTreeConfig.isSelective
+  val useSrv = fsTreeConfig.useSrv
   val fsTrie = new FSTreeWrapper(config = fsTreeConfig)
 
   // minimal scripts
@@ -209,7 +204,10 @@ case class Coverage(
     val strictCode = USE_STRICT + code
     val isMinifierHitOptFuture = Future {
       if (isSelective)
-        Some(Minifier.checkMinifyDiff(strictCode, minifyCmd))
+        if (useSrv)
+          Some(Minifier.checkMinifyDiffSrv(strictCode, minifyCmd))
+        else
+          Some(Minifier.checkMinifyDiff(strictCode, minifyCmd))
       else None
     }
 
@@ -392,7 +390,11 @@ case class Coverage(
   def branchViewCov: Int = condViews.size
 
   /** dump results with detail */
-  def dumpToWithDetail(baseDir: String, withMsg: Boolean = true): Unit = dumpTo(
+  def dumpToWithDetail(
+    baseDir: String,
+    withMsg: Boolean = true,
+    silent: Boolean = false,
+  ): Unit = dumpTo(
     baseDir = baseDir,
     withScripts = true,
     withScriptInfo = true,
@@ -400,6 +402,7 @@ case class Coverage(
     withUnreachableFuncs = true,
     withFStrie = true,
     withMsg = withMsg,
+    silent = silent,
   )
 
   /** dump results */
@@ -412,6 +415,7 @@ case class Coverage(
     withFStrie: Boolean = false,
     // TODO(@hyp3rflow): use this for ignoring dump messages
     withMsg: Boolean = false,
+    silent: Boolean = false,
   ): Unit =
     mkdir(baseDir)
     lazy val orderedNodeViews = nodeViews.toList.sorted
@@ -429,6 +433,7 @@ case class Coverage(
       ),
       filename = s"$baseDir/constructor.json",
       noSpace = false,
+      silent = silent,
     )
 
     val st = System.nanoTime()
@@ -441,6 +446,7 @@ case class Coverage(
       filename = s"$baseDir/node-coverage-chunks.json",
       noSpace = false,
       chunkSize = 40000,
+      silent = silent,
     )
     log("Dumped node coverage")
     dumpJsonChunks(
@@ -449,6 +455,7 @@ case class Coverage(
       filename = s"$baseDir/branch-coverage-chunks.json",
       noSpace = false,
       chunkSize = 40000,
+      silent = silent,
     )
     log("Dumped branch coverage")
     if (withScripts)
@@ -462,6 +469,7 @@ case class Coverage(
             .getOrElse(-1L)}%d ms" +
           LINE_SEP + USE_STRICT + script.code + LINE_SEP,
         remove = true,
+        silent = silent,
       )
       val minifiableMinimalScripts = _minimalScripts.filter(s =>
         _minimalInfo.get(s.name).exists(_.minifiable.getOrElse(false)),
@@ -473,6 +481,7 @@ case class Coverage(
         getName = _.name,
         getData = USE_STRICT + _.code + LINE_SEP,
         remove = true,
+        silent = silent,
       )
       dumpDir[Script](
         name = "minimal ECMAScript programs (not minifiable)",
@@ -481,6 +490,7 @@ case class Coverage(
         getName = _.name,
         getData = USE_STRICT + _.code + LINE_SEP,
         remove = true,
+        silent = silent,
       )
       log("Dumped scripts")
     if (withScriptInfo)
@@ -491,6 +501,7 @@ case class Coverage(
         getName = _._1,
         getData = _._2.test.core, // TODO: dump this as json?
         remove = true,
+        silent = silent,
       )
       log("Dumped assertions")
     if (withTargetCondViews)
@@ -502,6 +513,7 @@ case class Coverage(
         } yield getCondViewsId(CondView(cond, view))).toSeq.sorted.asJson,
         filename = s"$baseDir/target-conds.json",
         noSpace = false,
+        silent = silent,
       )
       log("dumped target conds")
     if (withUnreachableFuncs)
@@ -513,6 +525,7 @@ case class Coverage(
           .sorted
           .mkString(LINE_SEP),
         filename = s"$baseDir/unreach-funcs",
+        silent = silent,
       )
       log("dumped unreachable functions")
     if (withFStrie)
@@ -524,12 +537,14 @@ case class Coverage(
         data = fsTrieConfig,
         filename = s"$baseDir/fstrie-config.json",
         noSpace = false,
+        silent = silent,
       )
       dumpJson(
         name = "fstrie root",
         data = fsTrieRoot,
         filename = s"$baseDir/fstrie-root.json",
         noSpace = false,
+        silent = silent,
       )
       log("dumped fstriewrapper")
 

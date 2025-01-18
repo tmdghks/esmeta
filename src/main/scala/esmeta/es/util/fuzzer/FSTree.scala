@@ -403,6 +403,7 @@ case class FSTreeConfig(
   minTouch: Int = 10,
   oneSided: Boolean = true,
   isSelective: Boolean = true,
+  useSrv: Boolean = true,
 )
 
 /** Status of a node in the tree

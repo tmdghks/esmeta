@@ -55,6 +55,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
           .getOrElse(
             throw new Exception("sensitivity type is not set"),
           ),
+        useSrv = config.useSrv,
       ),
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
@@ -188,6 +189,11 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       BoolOption(c => c.onlineTest = true),
       "turn on the online test mode (default: false).",
     ),
+    (
+      "use-cli",
+      BoolOption(c => c.useSrv = false),
+      "use the CLI to transpile scripts (default: server).",
+    ),
   )
   case class Config(
     var log: Boolean = false,
@@ -209,5 +215,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var keepBugs: Boolean = false,
     var minifier: Option[String] = None,
     var onlineTest: Boolean = false,
+    var useSrv: Boolean = true,
   )
 }

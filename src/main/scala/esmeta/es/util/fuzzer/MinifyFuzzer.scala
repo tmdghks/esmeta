@@ -149,7 +149,6 @@ class MinifyFuzzer(
           visited += code
           if (info.invalid)
             fail("INVALID PROGRAM")
-          val tempScript = toScript(code)
           val interp = info.interp.getOrElse(fail("Interp Fail"))
           val finalState = interp.result
           val (_, updated, covered) = cov.checkWithTree(
