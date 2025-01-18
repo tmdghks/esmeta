@@ -17,6 +17,10 @@ import io.circe.*, io.circe.syntax.*
 
 import scala.math.Ordering.Implicits.seqOrdering
 
+import scala.concurrent.{Future, Await}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
 /** coverage measurement of cfg */
 case class Coverage(
   cfg: CFG,
@@ -124,20 +128,30 @@ case class Coverage(
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()
     var touchedCondViews: Map[CondView, Option[Nearest]] = Map()
 
-    val isSwcMinifiable =
-      if (logTranspilable) then Minifier.checkMinifyDiffSrv(code, Some("swc"))
-      else false
-    val isTerserMinifiable =
-      if (logTranspilable) then
-        Minifier.checkMinifyDiffSrv(code, Some("terser"))
-      else false
-    val isSwcES2015Transpilable =
-      if (logTranspilable) then
-        Minifier.checkMinifyDiffSrv(code, Some("swcES2015"))
-      else false
-    val isBabelTranspilable =
-      if (logTranspilable) then Minifier.checkMinifyDiffSrv(code, Some("babel"))
-      else false
+    val isTranspilableFuture = Future {
+      if (logTranspilable) {
+        val isSwcMinifiableTemp = Minifier.checkMinifyDiffSrv(code, Some("swc"))
+        val isTerserMinifiableTemp = Minifier.checkMinifyDiffSrv(code, Some("terser"))
+        val isSwcES2015TranspilableTemp = Minifier.checkMinifyDiffSrv(code, Some("swcES2015"))
+        val isBabelTranspilableTemp = Minifier.checkMinifyDiffSrv(code, Some("babel"))
+        (
+          isSwcMinifiableTemp,
+          isTerserMinifiableTemp,
+          isSwcES2015TranspilableTemp,
+          isBabelTranspilableTemp,
+        )
+      } else {
+        (
+          false,
+          false,
+          false,
+          false,
+        )
+      }
+    }
+
+    val (isSwcMinifiable, isTerserMinifiable, isSwcES2015Transpilable, isBabelTranspilable) =
+      Await.result(isTranspilableFuture, Duration.Inf)
 
     // update node coverage
     for ((nodeView, nearest) <- interp.touchedNodeViews)
