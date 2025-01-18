@@ -5,6 +5,7 @@ import scala.collection.mutable.Map as MMap
 import esmeta.util.BaseUtils.{computeChiSq, chiSqDistTable}
 import io.circe.*, io.circe.syntax.*, io.circe.generic.semiauto.*
 import esmeta.util.SystemUtils.*
+import esmeta.phase.MinifyFuzz
 
 object FSTreeWrapper:
   def fromDir(baseDir: String, fixed: Boolean): FSTreeWrapper =
@@ -101,12 +102,12 @@ class FSTreeWrapper(
     *   the feature stacks generated from the successful script
     */
   def touchWithHit(stacks: Iterable[List[String]]): Unit =
+    val startTime = System.currentTimeMillis()
     if !fixed then
       stacks.foreach { s =>
         root.touchByStack(s.take(config.maxSensitivity), isHit = true)
       }
-      root.writeback()
-      root.updateStatus()
+    MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
 
   /** Insert feature stacks from a single script into the tree. The script
     * failed to invoke some non-trivial minifier operations. Increment the
@@ -116,12 +117,19 @@ class FSTreeWrapper(
     *   the feature stacks generated from the failed script
     */
   def touchWithMiss(stacks: Iterable[List[String]]): Unit =
+    val startTime = System.currentTimeMillis()
     if !fixed then
       stacks.foreach { s =>
         root.touchByStack(s.take(config.maxSensitivity), isHit = false)
       }
-      root.writeback()
-      root.updateStatus()
+    MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
+
+  def refresh(): Unit =
+    val startTime = System.currentTimeMillis()
+    root.writebackScores()
+    root.updateStatus()
+    MinifyFuzz
+      .sampler("FSTree.refresh") += System.currentTimeMillis() - startTime
 
   def apply(stack: List[String]): Int =
     val tmpStack = stack.take(config.maxSensitivity)
@@ -224,7 +232,7 @@ class FSTreeWrapper(
     /** Write back the scores and number of promotables of each node if it's
       * dirty
       */
-    private[FSTreeWrapper] def writeback(): Unit =
+    private[FSTreeWrapper] def writebackScores(): Unit =
       foreachFromRoot { node =>
         // update parentHits and parentMisses
         for (child <- node.children.valuesIterator) {
@@ -235,7 +243,6 @@ class FSTreeWrapper(
       foreachFromLeaf { node =>
         // write back the if it's dirty
         if node.dirty then
-          node.dirty = false
           node.status match {
             case Promotable => // calculate the chiSq based on hits and misses
               node.chiSqValue = computeFeatureChiSq(
@@ -270,31 +277,34 @@ class FSTreeWrapper(
       if !chiSqValue.isFinite then println("Score is not finite")
       // demote to Ignored from the leaf first
       foreachFromLeaf { node =>
-        node.status match {
-          case Noticed if node.chiSqValue < config.demotionThreshold =>
-            node.foreachFromRoot { child =>
-              child.status = Ignored
-              child.promotables = 0
-            }
-          case _ => ()
-        }
+        if (node.dirty)
+          node.status match {
+            case Noticed if node.chiSqValue < config.demotionThreshold =>
+              node.foreachFromRoot { child =>
+                child.status = Ignored
+                child.promotables = 0
+              }
+            case _ => ()
+          }
       }
       // promote from Promotable to Noticed and Ignored to Promotable
       foreachFromRoot { node =>
-        node.status match {
-          case Noticed =>
-            children.valuesIterator.foreach { child =>
-              child.status match
-                case Ignored => child.status = Promotable
-                case _       =>
-            }
-          case Promotable if node.chiSqValue > config.promotionThreshold =>
-            node.status = Noticed
-            node.children.valuesIterator.foreach { child =>
-              child.status = Promotable
-            }
-          case _ => node.status
-        }
+        if (node.dirty)
+          node.status match {
+            case Noticed =>
+              children.valuesIterator.foreach { child =>
+                child.status match
+                  case Ignored => child.status = Promotable
+                  case _       =>
+              }
+            case Promotable if node.chiSqValue > config.promotionThreshold =>
+              node.status = Noticed
+              node.children.valuesIterator.foreach { child =>
+                child.status = Promotable
+              }
+            case _ => node.status
+          }
+          node.dirty = false
       }
 
     /** Recursively do something to each node in the tree, starting from the
