@@ -152,13 +152,14 @@ case class Coverage(
         case Some(blockScript) => blockingScripts += blockScript
 
     if (updated)
-      val isSwcMinifiable = Minifier.checkMinifyDiffSrv(code, Some("swc"))
+      val codeWithUseStrict = USE_STRICT + code
+      val isSwcMinifiable = Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("swc"))
       val isTerserMinifiable =
-        Minifier.checkMinifyDiffSrv(code, Some("terser"))
+        Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("terser"))
       val isSwcES2015Transpilable =
-        Minifier.checkMinifyDiffSrv(code, Some("swcES2015"))
+        Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("swcES2015"))
       val isBabelTranspilable =
-        Minifier.checkMinifyDiffSrv(code, Some("babel"))
+        Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("babel"))
 
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(cfg, finalSt),
