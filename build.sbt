@@ -175,6 +175,7 @@ lazy val root = project
         .cross(CrossVersion.for3Use2_13), // cors
       "org.graalvm.polyglot" % "polyglot" % "23.1.2",
       "org.graalvm.polyglot" % "js" % "23.1.2" pomOnly (),
+      "com.softwaremill.sttp.client4" %% "core" % "4.0.0-M24",
     ),
 
     // Copy all managed dependencies to <build-root>/lib_managed/ This is
