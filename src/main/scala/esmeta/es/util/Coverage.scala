@@ -153,7 +153,8 @@ case class Coverage(
 
     if (updated)
       val codeWithUseStrict = USE_STRICT + code
-      val isSwcMinifiable = Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("swc"))
+      val isSwcMinifiable =
+        Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("swc"))
       val isTerserMinifiable =
         Minifier.checkMinifyDiffSrv(codeWithUseStrict, Some("terser"))
       val isSwcES2015Transpilable =
