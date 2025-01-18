@@ -128,31 +128,6 @@ case class Coverage(
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()
     var touchedCondViews: Map[CondView, Option[Nearest]] = Map()
 
-    val isTranspilableFuture = Future {
-      if (logTranspilable) {
-        val isSwcMinifiableTemp = Minifier.checkMinifyDiffSrv(code, Some("swc"))
-        val isTerserMinifiableTemp = Minifier.checkMinifyDiffSrv(code, Some("terser"))
-        val isSwcES2015TranspilableTemp = Minifier.checkMinifyDiffSrv(code, Some("swcES2015"))
-        val isBabelTranspilableTemp = Minifier.checkMinifyDiffSrv(code, Some("babel"))
-        (
-          isSwcMinifiableTemp,
-          isTerserMinifiableTemp,
-          isSwcES2015TranspilableTemp,
-          isBabelTranspilableTemp,
-        )
-      } else {
-        (
-          false,
-          false,
-          false,
-          false,
-        )
-      }
-    }
-
-    val (isSwcMinifiable, isTerserMinifiable, isSwcES2015Transpilable, isBabelTranspilable) =
-      Await.result(isTranspilableFuture, Duration.Inf)
-
     // update node coverage
     for ((nodeView, nearest) <- interp.touchedNodeViews)
       touchedNodeViews += nodeView -> nearest
@@ -177,6 +152,14 @@ case class Coverage(
         case Some(blockScript) => blockingScripts += blockScript
 
     if (updated)
+      val isSwcMinifiable = Minifier.checkMinifyDiffSrv(code, Some("swc"))
+      val isTerserMinifiable =
+        Minifier.checkMinifyDiffSrv(code, Some("terser"))
+      val isSwcES2015Transpilable =
+        Minifier.checkMinifyDiffSrv(code, Some("swcES2015"))
+      val isBabelTranspilable =
+        Minifier.checkMinifyDiffSrv(code, Some("babel"))
+
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(cfg, finalSt),
         touchedNodeViews.keys,
