@@ -278,9 +278,9 @@ case class Coverage(
       case _           => /* do nothing */
     val midTime3 = System.currentTimeMillis()
 
-    MinifyFuzz.sampler("checkWithDetails.init") += midTime1 - startTime
-    MinifyFuzz.sampler("checkWithDetails.cli") += midTime2 - midTime1
-    MinifyFuzz.sampler("checkWithDetails.tree") += midTime3 - midTime2
+    MinifyFuzz.sampler("checkWithDetails-init") += midTime1 - startTime
+    MinifyFuzz.sampler("checkWithDetails-transpile") += midTime2 - midTime1
+    MinifyFuzz.sampler("checkWithDetails-tree") += midTime3 - midTime2
 
     if (updated)
       _minimalInfo += script.name -> ScriptInfo(

@@ -114,11 +114,13 @@ class Fuzzer(
         startInterval += seconds
       }
     }
+    val middleTime1 = System.currentTimeMillis
     val (selectorName, script, condView) = selector(pool, cov)
     val selectorInfo = selectorName + condView.map(" - " + _).getOrElse("")
     val code = script.code
     debugging(f"[$selectorInfo%-30s] $code")
     debugFlush
+    val middleTime2 = System.currentTimeMillis
 
     val mutants = mutator(code, 100, condView.map((_, cov)))
       .map((name, ast) => (name, ast.toString(grammar = Some(grammar))))
@@ -127,6 +129,8 @@ class Fuzzer(
       .par
       .map(infoExtractor)
       .toList
+
+    val middleTime3 = System.currentTimeMillis
 
     for ((mutatorName, mutatedCode, info) <- mutants)
       debugging(f"----- $mutatorName%-20s-----> $mutatedCode")
@@ -139,6 +143,14 @@ class Fuzzer(
     val duration = Time(tmp)
     debugging(s"iter/end: $iter - $duration")
     MinifyFuzz.sampler("Fuzzer.fuzz") += tmp
+    MinifyFuzz.sampler(
+      "Fuzzer.fuzz-log",
+    ) += middleTime1 - startTime
+    MinifyFuzz.sampler("Fuzzer.fuzz-select") += middleTime2 - middleTime1
+    MinifyFuzz.sampler("Fuzzer.fuzz-mutate") += middleTime3 - middleTime2
+    MinifyFuzz.sampler(
+      "Fuzzer.fuzz-add",
+    ) += System.currentTimeMillis - middleTime3
 
   /** Case class to hold the information about a candidate */
   case class CandInfo(
@@ -358,7 +370,7 @@ class Fuzzer(
   def logging: Unit =
     println()
     for {
-      (name, millis) <- MinifyFuzz.sampler.toList.sortBy(_._2).reverse
+      (name, millis) <- MinifyFuzz.sampler.toList.sortBy(_._1).reverse
     } {
       val duration = Time(millis)
       println(f"Sampler: $name%-30s: $duration")

@@ -124,13 +124,6 @@ class FSTreeWrapper(
       }
     MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
 
-  def refresh(): Unit =
-    val startTime = System.currentTimeMillis()
-    root.writebackScores()
-    root.updateStatus()
-    MinifyFuzz
-      .sampler("FSTree.refresh") += System.currentTimeMillis() - startTime
-
   def apply(stack: List[String]): Int =
     val tmpStack = stack.take(config.maxSensitivity)
     if !config.isSelective then config.maxSensitivity
@@ -209,7 +202,9 @@ class FSTreeWrapper(
       isHit: Boolean,
     ): Unit =
       if isHit then hits += 1 else misses += 1
-      dirty = true
+      updateMyChiSqValue()
+      updateMyStatus()
+
       stack match {
         case Nil =>
         case head :: tail =>
@@ -218,10 +213,7 @@ class FSTreeWrapper(
             case None =>
               val child = new FSTree(
                 MMap.empty[String, FSTree],
-                status match {
-                  case Noticed => Promotable
-                  case _       => Ignored
-                },
+                Ignored,
                 depth + 1,
               )
               children(head) = child
@@ -229,82 +221,20 @@ class FSTreeWrapper(
           }
       }
 
-    /** Write back the scores and number of promotables of each node if it's
-      * dirty
-      */
-    private[FSTreeWrapper] def writebackScores(): Unit =
-      foreachFromRoot { node =>
-        // update parentHits and parentMisses
-        for (child <- node.children.valuesIterator) {
-          child.parentHits = node.hits
-          child.parentMisses = node.misses
-        }
-      }
-      foreachFromLeaf { node =>
-        // write back the if it's dirty
-        if node.dirty then
-          node.status match {
-            case Promotable => // calculate the chiSq based on hits and misses
-              node.chiSqValue = computeFeatureChiSq(
-                hits = node.hits,
-                misses = node.misses,
-                pHits = node.parentHits,
-                pMisses = node.parentMisses,
-              )
-              node.promotables = 1
-            case Noticed => // calculate the average score and number of the node's promotables
-              node.promotables = node.children.valuesIterator
-                .map(child => child.promotables)
-                .sum
-              node.chiSqValue = computeFeatureChiSq(
-                hits = node.hits,
-                misses = node.misses,
-                pHits = node.parentHits,
-                pMisses = node.parentMisses,
-              )
-            case Ignored => ()
-          }
-          assert(
-            node.chiSqValue >= 0,
-            f"Score is negative: ${node.chiSqValue}, node: $node",
-          )
-      }
+    private def updateMyChiSqValue(): Unit =
+      chiSqValue = computeFeatureChiSq(
+        hits = hits,
+        misses = misses,
+        pHits = parentHits,
+        pMisses = parentMisses,
+      )
 
-    /** Promote or demote each node in the tree based on the score of this node.
-      * Assume that the children have already been written back.
-      */
-    private[FSTreeWrapper] def updateStatus(): Unit =
-      if !chiSqValue.isFinite then println("Score is not finite")
-      // demote to Ignored from the leaf first
-      foreachFromLeaf { node =>
-        if (node.dirty)
-          node.status match {
-            case Noticed if node.chiSqValue < config.demotionThreshold =>
-              node.foreachFromRoot { child =>
-                child.status = Ignored
-                child.promotables = 0
-              }
-            case _ => ()
-          }
-      }
-      // promote from Promotable to Noticed and Ignored to Promotable
-      foreachFromRoot { node =>
-        if (node.dirty)
-          node.status match {
-            case Noticed =>
-              children.valuesIterator.foreach { child =>
-                child.status match
-                  case Ignored => child.status = Promotable
-                  case _       =>
-              }
-            case Promotable if node.chiSqValue > config.promotionThreshold =>
-              node.status = Noticed
-              node.children.valuesIterator.foreach { child =>
-                child.status = Promotable
-              }
-            case _ => node.status
-          }
-          node.dirty = false
+    private def updateMyStatus(): Unit =
+      status match {
+        case Noticed =>
+          if (chiSqValue < config.demotionThreshold) status = Ignored
+        case _ =>
+          if (chiSqValue > config.promotionThreshold) status = Noticed
       }
 
     /** Recursively do something to each node in the tree, starting from the
@@ -329,7 +259,7 @@ class FSTreeWrapper(
     ): Unit =
       children.valuesIterator.foreach { child =>
         if iterIgnored || child.status != Ignored then
-          child.foreachFromRoot(op, iterIgnored)
+          child.foreachFromLeaf(op, iterIgnored)
       }
       op(this)
 
@@ -370,7 +300,7 @@ class FSTreeWrapper(
     private def stacksSuppl(
       currStack: List[String],
     ): Set[List[String]] =
-      if (status == Promotable) || (status == Ignored) then Set.empty
+      if (status == Ignored) then Set.empty
       else
         children.flatMap {
           case (k, v) =>
@@ -383,7 +313,7 @@ class FSTreeWrapper(
     def stacksWithScoresSuppl(
       currStack: List[String],
     ): Map[List[String], Double] =
-      if (status == Promotable) || (status == Ignored) then Map.empty
+      if (status == Ignored) then Map.empty
       else
         children.flatMap {
           case (k, v) =>
@@ -397,7 +327,7 @@ class FSTreeWrapper(
     ): Map[List[String], Double] =
       if children.isEmpty then
         Map(currStack -> (hits.toDouble / (hits + misses)))
-      else if (status == Promotable) || (status == Ignored) then Map.empty
+      else if (status == Ignored) then Map.empty
       else
         children.flatMap {
           case (k, v) =>
@@ -423,5 +353,4 @@ case class FSTreeConfig(
   */
 enum FSTreeStatus:
   case Noticed
-  case Promotable
   case Ignored
