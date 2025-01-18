@@ -62,26 +62,32 @@ class FSTreeWrapper(
   var fixed: Boolean = false,
 ) {
   val fixedSensMap = MMap.empty[List[String], Int]
-  var root: FSTree = FSTree(status = FSTreeStatus.Noticed, depth = 0)
+  var familyMap = Map.empty[Int, FSTree] // familyMap: child -> parent
+  def nextId = familyMap.size
+
+  var root: FSTree =
+    FSTree(status = FSTreeStatus.Noticed, depth = 0, isRoot = true, id = -1)
   var rootHits: Long = 0
   var rootMisses: Long = 0
 
   def sensDistr: Map[Int, Int] =
     root.stacks.groupBy(_.size).transform((_, v) => v.size).withDefault(_ => 0)
 
-  private def computeFeatureChiSq(
+  def computeFeatureChiSq(
     hits: Long,
     misses: Long,
     pHits: Long,
     pMisses: Long,
   ): Double = {
     // root is noticed without any conditions
-    if (pHits == 0 || pMisses == 0) chiSqDistTable.values.max + 1
+    val absentHits = pHits - hits
+    val absentMisses = pMisses - misses
+    val (chiSq, oddsRatio) =
+      computeChiSq(hits, misses, absentHits, absentMisses)
+    if (
+      (hits + misses < config.minTouch) || (oddsRatio <= 1 && config.oneSided)
+    ) then 0
     else
-      val absentHits = pHits - hits
-      val absentMisses = pMisses - misses
-      val (chiSq, oddsRatio) =
-        computeChiSq(hits, misses, absentHits, absentMisses)
       assert(
         chiSq >= 0,
         f"Score for rootHits: $pHits, rootMisses: $pMisses, hits: $hits, misses: $misses is negative: $chiSq",
@@ -90,10 +96,7 @@ class FSTreeWrapper(
         chiSq.isFinite,
         f"Score for rootHits: $pHits, rootMisses: $pMisses, hits: $hits, misses: $misses is not finite: $chiSq",
       )
-      if (
-        hits + misses < config.minTouch || (oddsRatio <= 1 && config.oneSided)
-      ) 0
-      else chiSq
+      chiSq
   }
 
   /** Insert feature stacks from a single script into the tree. The script
@@ -167,16 +170,14 @@ class FSTreeWrapper(
     * @param avgScoreSq
     */
   case class FSTree(
+    private val id: Int,
     private val children: MMap[String, FSTree] = MMap.empty[String, FSTree],
     private var status: FSTreeStatus,
     private val depth: Int,
     var hits: Long = 0,
     var misses: Long = 0,
-    var parentHits: Long = 0,
-    var parentMisses: Long = 0,
-    private var dirty: Boolean = false,
-    private var promotables: Int = 0,
     private var chiSqValue: Double = 0,
+    val isRoot: Boolean = false,
   ) {
     import FSTreeStatus.*
 
@@ -220,39 +221,54 @@ class FSTreeWrapper(
           children.get(head) match {
             case Some(child) => child.touchByStack(tail, isHit)
             case None =>
+              val childId = nextId
               val child = new FSTree(
-                MMap.empty[String, FSTree],
-                Ignored,
-                depth + 1,
+                id = childId,
+                children = MMap.empty[String, FSTree],
+                status = Ignored,
+                depth = depth + 1,
               )
               children(head) = child
+              familyMap += (childId -> this)
               child.touchByStack(tail, isHit)
           }
       }
 
     private def updateMyLocalChiSqValue(): Unit =
-      chiSqValue = computeFeatureChiSq(
-        hits = hits,
-        misses = misses,
-        pHits = parentHits,
-        pMisses = parentMisses,
-      )
+      if (!isRoot)
+        val parent = familyMap.getOrElse(
+          this.id, {
+            println("UNREACHABLE!!! No parent found for a non-root node")
+            throw new RuntimeException("No parent found for a non-root node")
+          },
+        )
+        val parentHits = parent.hits
+        val parentMisses = parent.misses
+
+        chiSqValue = computeFeatureChiSq(
+          hits = hits,
+          misses = misses,
+          pHits = parentHits,
+          pMisses = parentMisses,
+        )
 
     private def updateMyGlobalChiSqValue(): Unit =
-      chiSqValue = computeFeatureChiSq(
-        hits = hits,
-        misses = misses,
-        pHits = rootHits,
-        pMisses = rootMisses,
-      )
+      if (!isRoot)
+        chiSqValue = computeFeatureChiSq(
+          hits = hits,
+          misses = misses,
+          pHits = rootHits,
+          pMisses = rootMisses,
+        )
 
     private def updateMyStatus(): Unit =
-      status match {
-        case Noticed =>
-          if (chiSqValue < config.demotionThreshold) status = Ignored
-        case _ =>
-          if (chiSqValue > config.promotionThreshold) status = Noticed
-      }
+      if (!isRoot)
+        status match {
+          case Noticed =>
+            if (chiSqValue < config.demotionThreshold) status = Ignored
+          case _ =>
+            if (chiSqValue > config.promotionThreshold) status = Noticed
+        }
 
     /** Recursively do something to each node in the tree, starting from the
       * root
