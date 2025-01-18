@@ -52,10 +52,14 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
         minTouch = config.fsMinTouch,
         oneSided = config.oneSided,
         isSelective = config.isSelectiveOpt
-          .getOrElse(
-            throw new Exception("sensitivity type is not set"),
-          ),
+          .getOrElse {
+            println(
+              "Sensitivity type is not set. Use selective by default.",
+            )
+            true
+          },
         useSrv = config.useSrv,
+        useLocalCorrelation = config.useLocalCorrelation,
       ),
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
@@ -194,6 +198,18 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       BoolOption(c => c.useSrv = false),
       "use the CLI to transpile scripts (default: server).",
     ),
+    (
+      "correlation-type",
+      StrOption((c, s) =>
+        c.useLocalCorrelation = s match {
+          case "local"  => true
+          case "global" => false
+          case _ =>
+            error("invalid correlation type: please set local or global")
+        },
+      ),
+      "set the correlation type: local or global",
+    ),
   )
   case class Config(
     var log: Boolean = false,
@@ -216,5 +232,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var minifier: Option[String] = None,
     var onlineTest: Boolean = false,
     var useSrv: Boolean = true,
+    var useLocalCorrelation: Boolean = false,
   )
 }

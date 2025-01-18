@@ -9,7 +9,6 @@ import esmeta.es.*
 import esmeta.es.util.fuzzer.{Fuzzer, FSTreeConfig}
 import esmeta.es.util.{UnitWalker, Coverage, ValidityChecker}
 import esmeta.spec.util.GrammarGraph
-import esmeta.synthesizer.{SimpleSynthesizer, BuiltinSynthesizer}
 import scala.collection.mutable.ArrayBuffer
 
 /** `fuzz` phase */

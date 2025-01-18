@@ -63,6 +63,8 @@ class FSTreeWrapper(
 ) {
   val fixedSensMap = MMap.empty[List[String], Int]
   var root: FSTree = FSTree(status = FSTreeStatus.Noticed, depth = 0)
+  var rootHits: Long = 0
+  var rootMisses: Long = 0
 
   def sensDistr: Map[Int, Int] =
     root.stacks.groupBy(_.size).transform((_, v) => v.size).withDefault(_ => 0)
@@ -107,6 +109,7 @@ class FSTreeWrapper(
       stacks.foreach { s =>
         root.touchByStack(s.take(config.maxSensitivity), isHit = true)
       }
+      rootHits += stacks.size
     MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
 
   /** Insert feature stacks from a single script into the tree. The script
@@ -122,6 +125,7 @@ class FSTreeWrapper(
       stacks.foreach { s =>
         root.touchByStack(s.take(config.maxSensitivity), isHit = false)
       }
+      rootMisses += stacks.size
     MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
 
   def apply(stack: List[String]): Int =
@@ -202,7 +206,12 @@ class FSTreeWrapper(
       isHit: Boolean,
     ): Unit =
       if isHit then hits += 1 else misses += 1
-      updateMyChiSqValue()
+
+      if (config.useLocalCorrelation)
+        updateMyLocalChiSqValue()
+      else
+        updateMyGlobalChiSqValue()
+
       updateMyStatus()
 
       stack match {
@@ -221,12 +230,20 @@ class FSTreeWrapper(
           }
       }
 
-    private def updateMyChiSqValue(): Unit =
+    private def updateMyLocalChiSqValue(): Unit =
       chiSqValue = computeFeatureChiSq(
         hits = hits,
         misses = misses,
         pHits = parentHits,
         pMisses = parentMisses,
+      )
+
+    private def updateMyGlobalChiSqValue(): Unit =
+      chiSqValue = computeFeatureChiSq(
+        hits = hits,
+        misses = misses,
+        pHits = rootHits,
+        pMisses = rootMisses,
       )
 
     private def updateMyStatus(): Unit =
@@ -344,6 +361,7 @@ case class FSTreeConfig(
   oneSided: Boolean = true,
   isSelective: Boolean = true,
   useSrv: Boolean = true,
+  useLocalCorrelation: Boolean = false,
 )
 
 /** Status of a node in the tree

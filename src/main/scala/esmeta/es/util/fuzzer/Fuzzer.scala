@@ -278,7 +278,6 @@ class Fuzzer(
       BuiltinSynthesizer(cfg.spec.algorithms).initPool
         .map(BuiltinSynthesizer(cfg.spec.algorithms).name -> _),
     )
-    .take(42)
 
   lazy val logDir: String = s"$FUZZ_LOG_DIR/fuzz-$dateStr"
   lazy val symlink: String = s"$FUZZ_LOG_DIR/recent"
