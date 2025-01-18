@@ -123,7 +123,7 @@ class MinifyFuzzer(
         val interp = info.interp.getOrElse(fail("Interp Fail"))
         val finalState = interp.result
         val (_, updated, covered) = cov.check(script, interp)
-        // temporally disabled 
+        // temporally disabled
         // val filtered = interp.coveredAOs intersect filteredAOs
         // if (filtered.isEmpty)
         //   minifyTest(iter, finalState, code, covered)

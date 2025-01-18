@@ -19,7 +19,6 @@ import scala.collection.parallel.CollectionConverters._
 import esmeta.util.SystemUtils.*
 import esmeta.es.util.ValidityChecker
 import esmeta.es.util.fuzzer.MinifyFuzzer
-import esmeta.es.util.fuzzer.original.OriginalMinifyFuzzer
 
 case object MinifyFuzz extends Phase[CFG, Coverage] {
   val name = "minify-fuzz"
@@ -34,40 +33,22 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     val graph = GrammarGraph(cfg.grammar)
     import graph.*
 
-    if config.originalTemporal then
-      val cov = OriginalMinifyFuzzer(
-        cfg = cfg,
-        logInterval = config.logInterval,
-        debug = config.debug,
-        timeLimit = config.timeLimit,
-        trial = config.trial,
-        duration = config.duration,
-        kFs = config.kFs,
-        cp = config.cp,
-        init = config.init,
-        logTranspilable = config.logTranspilable,
-      )
+    val cov = MinifyFuzzer(
+      cfg = cfg,
+      logInterval = config.logInterval,
+      debug = config.debug,
+      timeLimit = config.timeLimit,
+      trial = config.trial,
+      duration = config.duration,
+      kFs = config.kFs,
+      cp = config.cp,
+      init = config.init,
+      logTranspilable = config.logTranspilable,
+    )
 
-      for (dirname <- config.out) cov.dumpToWithDetail(dirname)
+    for (dirname <- config.out) cov.dumpToWithDetail(dirname)
 
-      cov
-    else
-      val cov = MinifyFuzzer(
-        cfg = cfg,
-        logInterval = config.logInterval,
-        debug = config.debug,
-        timeLimit = config.timeLimit,
-        trial = config.trial,
-        duration = config.duration,
-        kFs = config.kFs,
-        cp = config.cp,
-        init = config.init,
-        logTranspilable = config.logTranspilable,
-      )
-
-      for (dirname <- config.out) cov.dumpToWithDetail(dirname)
-
-      cov
+    cov
 
   def defaultConfig: Config = Config()
   val options: List[PhaseOption[Config]] = List(
@@ -130,11 +111,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       "explicitly use the given init pool",
     ),
     (
-      "original-temporal",
-      BoolOption(c => c.originalTemporal = true),
-      "use the original temporal mutator and synthesizer (default: false).",
-    ),
-    (
       "log-transpilable",
       BoolOption(c => c.logTranspilable = true),
       "log transpilable code (default: false).",
@@ -152,7 +128,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var init: Option[String] = None,
     var kFs: Int = 0,
     var cp: Boolean = false,
-    var originalTemporal: Boolean = false,
     var logTranspilable: Boolean = false,
   )
 }
