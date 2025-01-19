@@ -381,6 +381,60 @@ case class Coverage(
       coveredCondViews,
     )
 
+  def cleanup(): Unit = {
+    val startTime = System.currentTimeMillis()
+
+    val mortalNodeViews = nodeViews.filterNot {
+      case NodeView(_, Some((tail, head, _))) =>
+        val stack = head :: tail
+        val sensitiveLength = fsTrie(stack.map(_.func.name))
+        sensitiveLength >= stack.length
+      case _ => true
+    }
+    val mortalCondViews = condViews.filterNot {
+      case CondView(cond, Some((tail, head, _))) =>
+        val stack = head :: tail
+        val sensitiveLength = fsTrie(stack.map(_.func.name))
+        sensitiveLength >= stack.length
+      case _ => true
+    }
+
+    val woundScripts = mortalNodeViews.map(getScript).flatten ++
+      mortalCondViews.map(getScript).flatten
+
+    for (nodeView <- mortalNodeViews) {
+      val NodeView(node, view) = nodeView
+      nodeViewMap += node -> (apply(node) - view)
+    }
+
+    for (condView <- mortalCondViews) {
+      val CondView(cond, view) = condView
+      condViewMap += cond -> (apply(cond) - view)
+      removeTargetCond(condView)
+    }
+
+    nodeViews --= mortalNodeViews
+    condViews --= mortalCondViews
+
+    for (script <- woundScripts) {
+      val count = counter(script) - 1
+      counter += (script -> count)
+      if (count == 0) {
+        counter -= script
+        _minimalScripts -= script
+        _minimalInfo -= script.name
+      }
+    }
+
+    val endTime = System.currentTimeMillis()
+    MinifyFuzz.sampler("Coverage.cleanup") += endTime - startTime
+
+    println(
+      s"cleanup: ${mortalNodeViews.size} node views, ${mortalCondViews.size} cond views, ${woundScripts.size} scripts",
+    )
+
+  }
+
   /** get node coverage */
   def nodeCov: Int = nodeViewMap.size
   def nodeViewCov: Int = nodeViews.size

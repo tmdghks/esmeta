@@ -377,6 +377,8 @@ class Fuzzer(
 
     val startTime = System.currentTimeMillis
 
+    cov.cleanup()
+
     val n = cov.nodeCov
     val b = cov.branchCov
     val e = elapsed
