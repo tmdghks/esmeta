@@ -198,8 +198,6 @@ case class Coverage(
     Boolean,
     Boolean,
   ) =
-    val startTime = System.currentTimeMillis()
-
     val Script(code, _, _, _, _) = script
     val strictCode = USE_STRICT + code
     val isMinifierHitOptFuture = Future {
@@ -266,22 +264,12 @@ case class Coverage(
           updated = true
         case Some(blockScript) => ()
 
-    val midTime1 = System.currentTimeMillis()
-
     val isMinifierHitOpt = Await.result(isMinifierHitOptFuture, Duration.Inf)
-
-    val midTime2 = System.currentTimeMillis()
 
     isMinifierHitOpt match
       case Some(true)  => fsTrie.touchWithHit(rawStacks)
       case Some(false) => fsTrie.touchWithMiss(rawStacks)
       case _           => /* do nothing */
-    val midTime3 = System.currentTimeMillis()
-
-    MinifyFuzz.sampler("checkWithDetails-init") += midTime1 - startTime
-    MinifyFuzz.sampler("checkWithDetails-transpile") += midTime2 - midTime1
-    MinifyFuzz.sampler("checkWithDetails-tree") += midTime3 - midTime2
-
     if (updated)
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(cfg, finalSt),
@@ -382,8 +370,6 @@ case class Coverage(
     )
 
   def cleanup(): Unit = {
-    val startTime = System.currentTimeMillis()
-
     val mortalNodeViews = nodeViews.filterNot {
       case NodeView(_, Some((tail, head, _))) =>
         val stack = head :: tail
@@ -425,9 +411,6 @@ case class Coverage(
         _minimalInfo -= script.name
       }
     }
-
-    val endTime = System.currentTimeMillis()
-    MinifyFuzz.sampler("Coverage.cleanup") += endTime - startTime
 
     println(
       s"cleanup: ${mortalNodeViews.size} node views, ${mortalCondViews.size} cond views, ${woundScripts.size} scripts",

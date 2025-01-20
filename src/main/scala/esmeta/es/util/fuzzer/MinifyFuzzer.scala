@@ -141,8 +141,7 @@ class MinifyFuzzer(
     )
 
     override def add(code: String, info: CandInfo): Boolean =
-      val startTime = System.currentTimeMillis()
-      val temp = handleResult(
+      handleResult(
         Try {
           if (info.visited)
             fail("ALREADY VISITED")
@@ -163,9 +162,6 @@ class MinifyFuzzer(
           covered
         },
       )
-      MinifyFuzz
-        .sampler("MinifyFuzzer.add") += System.currentTimeMillis() - startTime
-      temp
 
     override def logging: Unit =
       val jsonProtocol: JsonProtocol = JsonProtocol(cfg)

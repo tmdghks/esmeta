@@ -107,13 +107,11 @@ class FSTreeWrapper(
     *   the feature stacks generated from the successful script
     */
   def touchWithHit(stacks: Iterable[List[String]]): Unit =
-    val startTime = System.currentTimeMillis()
     if !fixed then
       stacks.foreach { s =>
         root.touchByStack(s.take(config.maxSensitivity), isHit = true)
       }
       rootHits += stacks.size
-    MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
 
   /** Insert feature stacks from a single script into the tree. The script
     * failed to invoke some non-trivial minifier operations. Increment the
@@ -123,13 +121,11 @@ class FSTreeWrapper(
     *   the feature stacks generated from the failed script
     */
   def touchWithMiss(stacks: Iterable[List[String]]): Unit =
-    val startTime = System.currentTimeMillis()
     if !fixed then
       stacks.foreach { s =>
         root.touchByStack(s.take(config.maxSensitivity), isHit = false)
       }
       rootMisses += stacks.size
-    MinifyFuzz.sampler("FSTree.touch") += System.currentTimeMillis() - startTime
 
   def apply(stack: List[String]): Int =
     val tmpStack = stack.take(config.maxSensitivity)

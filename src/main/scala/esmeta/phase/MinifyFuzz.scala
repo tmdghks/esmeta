@@ -25,8 +25,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
   val name = "minify-fuzz"
   val help = "generate ECMAScript programs for fuzzing minifier"
 
-  val sampler = MMap.empty[String, Long].withDefault(_ => 0)
-
   def apply(
     cfg: CFG,
     cmdConfig: CommandConfig,
