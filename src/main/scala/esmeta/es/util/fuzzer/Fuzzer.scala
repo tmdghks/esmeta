@@ -43,6 +43,7 @@ class Fuzzer(
   lazy val scriptParser = cfg.scriptParser
 
   val kFs = fsTreeConfig.maxSensitivity
+  val doCleanup = fsTreeConfig.doCleanup
 
   /** generated ECMAScript programs */
   lazy val result: Coverage =
@@ -356,7 +357,7 @@ class Fuzzer(
 
     val startTime = System.currentTimeMillis
 
-    cov.cleanup()
+    if (doCleanup) cov.cleanup()
 
     val n = cov.nodeCov
     val b = cov.branchCov

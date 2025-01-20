@@ -374,6 +374,7 @@ case class FSTreeConfig(
   isSelective: Boolean = true,
   useSrv: Boolean = true,
   useLocalCorrelation: Boolean = false,
+  doCleanup: Boolean = false,
 )
 
 /** Status of a node in the tree
