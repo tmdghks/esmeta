@@ -220,6 +220,70 @@ class MinifyFuzzer(
             minifyTester.test(original) match
               case None | Some(_: AssertionSuccess) => true
               case Some(failure) =>
+                logWithOutDeltaDebug(
+                  MinifyFuzzResult(
+                    minimalIter,
+                    false,
+                    original,
+                    failure,
+                    Some(name),
+                  ),
+                  baseLogDir,
+                )
+                false
+          }).fold(true)(_ && _)
+        case _ => true
+      if (!passed) {
+        bugCount += 1
+      }
+    }
+    bugCount
+
+  // todo: integrate with testMinimal
+  def testMinimalWithDeltaDebug(
+    minimals: List[Script],
+    baseLogDir: String,
+  ): Int =
+    var bugCount = 0
+    var minimalIter = 0
+    for (
+      minimal <- ProgressBar(
+        "delta-debugging minimals",
+        minimals,
+        getName = (x, _) => x.name,
+        detail = false,
+        concurrent = ConcurrentPolicy.Auto,
+        errorHandler = (e, _, name) => println(s"Error: $name: $e"),
+      )
+    ) {
+      minimalIter += 1
+      val code = minimal.code
+      val name = removedExt(minimal.name)
+      val state =
+        Interpreter(
+          cfg.init.from(minimal),
+          log = false,
+          detail = false,
+          timeLimit = timeLimit,
+        )
+      val injector = ReturnInjector(cfg, state, timeLimit, false)
+      val passed = injector.exitTag match
+        case NormalTag =>
+          val returns = injector.assertions
+          val tracerExprCode = tracerExprInjector(code)
+          val codes = List(tracerExprCode)
+          // println(s"tracerExprCode: $tracerExprCode")
+          //   code +: tracerExprMutator(code, 5, None).map(
+          //   _._2.toString(grammar = Some(cfg.grammar)),
+          // )
+          (for {
+            ret <- returns.par
+            code <- codes.par
+          } yield {
+            val original = buildTestProgram(code, ret)
+            minifyTester.test(original) match
+              case None | Some(_: AssertionSuccess) => true
+              case Some(failure) =>
                 val delta =
                   DeltaDebugger(
                     cfg,
@@ -388,6 +452,35 @@ class MinifyFuzzer(
         // unreachable path
         case _ => ???
     }
+
+  // todo: integrate with log
+  def logWithOutDeltaDebug(result: MinifyFuzzResult, baseLogDir: String) =
+    val MinifyFuzzResult(iter, covered, original, test, name) = result
+    val iterName = s"${name.map(n => s"minimal-$n-").getOrElse("")}iter-$iter"
+    val transpiled = test.minified
+    val injected = test.injected
+
+    val count = bugIndexCounter.incrementAndGet()
+    val dirpath = s"$baseLogDir/$count"
+    mkdir(dirpath)
+    dumpFile(transpiled, s"$dirpath/transpiled.js")
+    dumpFile(injected, s"$dirpath/injected.js")
+    dumpFile(original, s"$dirpath/original.js")
+    test.getReason.map(dumpFile(_, s"$dirpath/reason"))
+    val elapsed = fuzzer.getElapsed // dump bug found time to info filtered
+    dumpJson(
+      Json.obj(
+        "iter" -> Json.fromInt(iter),
+        "covered" -> Json.fromBoolean(covered),
+        "found-time(ms)" -> Json.fromLong(elapsed),
+        "found-time" -> Json.fromString(Time(elapsed).simpleString),
+      ),
+      s"$dirpath/info",
+    )
+
+    val dirpathBug = s"$baseLogDir/$count/bugs"
+    mkdir(dirpathBug)
+    dumpFile(original, s"$dirpathBug/$iterName.js")
 }
 
 case class MinifyFuzzResult(

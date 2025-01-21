@@ -70,10 +70,13 @@ case object TestMinimals extends Phase[CFG, Unit] {
         fsTreeConfig = FSTreeConfig(),
         minifyCmd = config.minifier,
       )
-    val bugCount = minifyFuzzer.testMinimal(
-      scriptList,
-      baseLogDir,
-    )
+    val bugCount =
+      if config.deltaDebug then
+        minifyFuzzer.testMinimalWithDeltaDebug(
+          scriptList,
+          baseLogDir,
+        )
+      else minifyFuzzer.testMinimal(scriptList, baseLogDir)
 
     println(s"Total: $totalCount, Bugs: $bugCount")
     println(s"Bug rate: ${bugCount.toDouble / totalCount * 100}%")
@@ -117,6 +120,11 @@ case object TestMinimals extends Phase[CFG, Unit] {
       StrOption((c, s) => c.minifier = Some(s)),
       "minifier to use.",
     ),
+    (
+      "delta-debug",
+      BoolOption((c) => c.deltaDebug = true),
+      "use delta debugging.",
+    ),
   )
 
   class Config(
@@ -125,5 +133,6 @@ case object TestMinimals extends Phase[CFG, Unit] {
     var injectTimeLimit: Option[Int] = None,
     var testTimeLimit: Option[Int] = None,
     var minifier: Option[String] = None,
+    var deltaDebug: Boolean = false,
   )
 }
