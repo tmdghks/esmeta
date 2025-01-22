@@ -463,7 +463,7 @@ class MinifyFuzzer(
     val count = bugIndexCounter.incrementAndGet()
     val dirpath = s"$baseLogDir/$count"
     mkdir(dirpath)
-    dumpFile(transpiled, s"$dirpath/transpiled.js")
+    dumpFile(transpiled, s"$dirpath/minified.js")
     dumpFile(injected, s"$dirpath/injected.js")
     dumpFile(original, s"$dirpath/original.js")
     test.getReason.map(dumpFile(_, s"$dirpath/reason"))

@@ -61,7 +61,13 @@ case object TestMinimals extends Phase[CFG, Unit] {
         "swcES2015"
       case _ => throw new Exception("Unsupported minifier")
 
-    val baseLogDir = s"$baseDir/minimal/delta/$minifierName"
+    val baseLogDir =
+      config.deltaDebug match
+        case true =>
+          s"$baseDir/minimal/delta/$minifierName-dd"
+        case false =>
+          s"$baseDir/minimal/delta/$minifierName"
+
     mkdir(baseLogDir)
 
     val minifyFuzzer =
