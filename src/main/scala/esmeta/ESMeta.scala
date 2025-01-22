@@ -86,6 +86,7 @@ object ESMeta extends Git(BASE_DIR) {
     CmdCoverageInvestigate,
     CmdMinifyCheck,
     CmdTestMinimals,
+    CmdCleanupMinimals,
     CmdFSTrieStats,
     // ECMAScript Static Analysis (Meta-Level Static Analysis)
     CmdAnalyze,
@@ -116,6 +117,7 @@ object ESMeta extends Git(BASE_DIR) {
     CoverageInvestigate,
     MinifyCheck,
     TestMinimals,
+    CleanupMinimals,
     FSTrieStats,
     // ECMAScript Static Analysis (Meta-Level Static Analysis)
     Analyze,

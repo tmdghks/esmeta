@@ -258,6 +258,14 @@ case object CmdTestMinimals
   )
 }
 
+case object CmdCleanupMinimals
+  extends Command("cleanup-minimals", CmdBuildCFG >> CleanupMinimals) {
+  val help = "cleanup minimals given fuzzing data"
+  val examples = List(
+    "esmeta minimal-cleanup log-dir -minimal-cleanup:out=out-dir",
+  )
+}
+
 /** `fstrie-stats` command */
 case object CmdFSTrieStats
   extends Command("fstrie-stats", CmdBase >> FSTrieStats) {

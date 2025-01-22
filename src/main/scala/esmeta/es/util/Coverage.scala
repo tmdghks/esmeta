@@ -851,21 +851,29 @@ object Coverage {
     cov.fsTrie.replaceRootFromFile(f"$baseDir/fstrie-root.json")
     cov.fsTrie.fixed = true
 
-    println("coverage initialized")
+    val minimalFiles = listFiles(s"$baseDir/minimal")
+    println(
+      s"coverage initialized. loading ${minimalFiles.size} minimal scripts",
+    )
 
     for (
       minimal <- ProgressBar(
         "reconstructing coverage",
-        listFiles(s"$baseDir/minimal"),
+        minimalFiles,
         getName = (x, _) => x.getName(),
         detail = false,
-        concurrent = ConcurrentPolicy.Auto,
-        timeLimit = Some(10),
+        concurrent = ConcurrentPolicy.Single,
+        timeLimit = Some(100),
       )
     ) {
       val name = minimal.getName
       if jsFilter(name) then
-        val code = readFile(minimal.getPath).drop(USE_STRICT.length).strip
+        val code = readFile(minimal.getPath).linesIterator
+          .filterNot(_.trim.startsWith("//"))
+          .mkString("\n")
+          .strip
+          .drop(USE_STRICT.length)
+          .strip
         try {
           val script = Script(code, name)
           cov.runAndCheckWithBlocking(script)
