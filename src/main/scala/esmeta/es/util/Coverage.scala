@@ -479,7 +479,7 @@ case class Coverage(
 
     dumpJsonChunks(
       name = "node coverage",
-      iterable = orderedNodeViews,
+      iterable = nodeViewInfos(orderedNodeViews),
       filename = s"$baseDir/node-coverage-chunks.json",
       noSpace = false,
       chunkSize = 40000,
@@ -488,7 +488,7 @@ case class Coverage(
     log("Dumped node coverage")
     dumpJsonChunks(
       name = "branch coverage",
-      iterable = orderedCondViews,
+      iterable = condViewInfos(orderedCondViews),
       filename = s"$baseDir/branch-coverage-chunks.json",
       noSpace = false,
       chunkSize = 40000,
