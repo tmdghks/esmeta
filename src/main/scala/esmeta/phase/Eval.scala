@@ -7,6 +7,7 @@ import esmeta.state.*
 import esmeta.util.*
 import esmeta.util.SystemUtils.*
 import esmeta.es.*
+import esmeta.es.util.Coverage.*
 
 /** `eval` phase */
 case object Eval extends Phase[CFG, State] {
@@ -28,12 +29,23 @@ case object Eval extends Phase[CFG, State] {
       st
     else run(cfg, config, getFirstFilename(cmdConfig, this.name))
 
-  def run(cfg: CFG, config: Config, filename: String): State = Interpreter(
-    cfg.init.fromFile(filename),
-    log = config.log,
-    detail = config.detail,
-    timeLimit = config.timeLimit,
-  )
+  def run(cfg: CFG, config: Config, filename: String): State =
+    val interp = Interp(
+      cfg.init.fromFile(filename),
+      cp = false,
+      timeLimit = config.timeLimit,
+    )
+    val res = interp.result
+    for (nv <- interp.touchedNodeViews) {
+      val (NodeView(_, view), _) = nv
+      view.foreach {
+        case (enclosing, feature, _) =>
+          println()
+          val featureStack = (feature :: enclosing).map(_.func.name)
+          println(featureStack.mkString("\n"))
+      }
+    }
+    res
 
   def defaultConfig: Config = Config()
   val options: List[PhaseOption[Config]] = List(
