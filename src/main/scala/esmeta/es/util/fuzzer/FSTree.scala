@@ -70,6 +70,19 @@ class FSTreeWrapper(
   var rootHits: Long = 0
   var rootMisses: Long = 0
 
+  var stacksPromotionMap: MMap[List[String], Int] =
+    MMap.empty.withDefault(_ => 0)
+
+  def flushPrmDemStacks(): (Set[List[String]], Set[List[String]]) =
+    val prm = stacksPromotionMap.collect {
+      case (k, v) if v > 0 => k
+    }.toSet
+    val dem = stacksPromotionMap.collect {
+      case (k, v) if v < 0 => k
+    }.toSet
+    stacksPromotionMap = MMap.empty.withDefault(_ => 0)
+    (prm, dem)
+
   def sensDistr: Map[Int, Int] =
     root.stacks.groupBy(_.size).transform((_, v) => v.size).withDefault(_ => 0)
 
@@ -103,9 +116,6 @@ class FSTreeWrapper(
   /** Insert feature stacks from a single script into the tree. The script
     * succeeded to invoke some non-trivial minifier operations. Increment the
     * hits of each node in the tree.
-    *
-    * @param stacks
-    *   the feature stacks generated from the successful script
     */
   def touchWithHit(stacks: Iterable[List[String]]): Unit =
     if !fixed then
@@ -117,9 +127,6 @@ class FSTreeWrapper(
   /** Insert feature stacks from a single script into the tree. The script
     * failed to invoke some non-trivial minifier operations. Increment the
     * misses of each node in the tree.
-    *
-    * @param stacks
-    *   the feature stacks generated from the failed script
     */
   def touchWithMiss(stacks: Iterable[List[String]]): Unit =
     if !fixed then
@@ -153,18 +160,6 @@ class FSTreeWrapper(
     * children. The score is used to determine the promotion or demotion of a
     * node. The fields are mutable for (maybe) better performance than using
     * immutable case classes and copying.
-    *
-    * @param children
-    * @param status
-    * @param hits
-    * @param misses
-    * @param promotables
-    *   number of Promotable descendants of this node.
-    * @param avgScore
-    *   average score of its descendants which are Promotable. If this node is
-    *   Promotable, the score is calculated based on the hits and misses of this
-    *   node.
-    * @param avgScoreSq
     */
   case class FSTree(
     private val id: Int,
@@ -179,29 +174,38 @@ class FSTreeWrapper(
     import FSTreeStatus.*
 
     /** How many features do we need to take from the stack?
-      *
-      * @param stack
-      *   the stack of features' names
-      * @return
-      *   the number of features we need to take
       */
     private[FSTreeWrapper] def apply(stack: List[String]): Int =
+      val sensK = applySuppl(stack, 0)
       math.min(
-        foldByStack(stack, -1) {
-          case (acc, node) =>
-            if node.status == Noticed then acc + 1
-            else acc
-        },
+        sensK,
         config.maxSensitivity,
       )
+
+    private def applySuppl(stack: List[String], acc: Int): Int =
+      status match
+        case Ignored =>
+          acc - 1
+        case Noticed =>
+          stack match
+            case head :: next =>
+              children.get(head) match
+                case None =>
+                  acc
+                case Some(child) =>
+                  child.applySuppl(next, acc + 1)
+            case Nil =>
+              acc
 
     /** Insert a feature stack into the tree. Increment the hits or misses of
       * each node in the tree based on whether the node is hit or miss.
       */
     @tailrec
     private[FSTreeWrapper] final def touchByStack(
-      stack: List[String],
+      nextStack: List[String],
       isHit: Boolean,
+      currStack: List[String] = Nil,
+      parentIgnored: Boolean = false,
     ): Unit =
       if isHit then hits += 1 else misses += 1
 
@@ -210,13 +214,14 @@ class FSTreeWrapper(
       else
         updateMyGlobalChiSqValue()
 
-      updateMyStatus()
+      val isNoticed = updateMyStatus(currStack, parentIgnored)
 
-      stack match {
+      nextStack match {
         case Nil =>
         case head :: tail =>
           children.get(head) match {
-            case Some(child) => child.touchByStack(tail, isHit)
+            case Some(child) =>
+              child.touchByStack(tail, isHit, currStack :+ head, !isNoticed)
             case None =>
               val childId = nextId
               val child = new FSTree(
@@ -227,7 +232,7 @@ class FSTreeWrapper(
               )
               children(head) = child
               familyMap += (childId -> this)
-              child.touchByStack(tail, isHit)
+              child.touchByStack(tail, isHit, currStack :+ head, !isNoticed)
           }
       }
 
@@ -258,14 +263,26 @@ class FSTreeWrapper(
           pMisses = rootMisses,
         )
 
-    private def updateMyStatus(): Unit =
+    private def updateMyStatus(
+      currStack: List[String],
+      parentIgnored: Boolean,
+    ): Boolean =
       if (!isRoot)
         status match {
           case Noticed =>
-            if (chiSqValue < config.demotionThreshold) status = Ignored
-          case _ =>
-            if (chiSqValue > config.promotionThreshold) status = Noticed
+            if (chiSqValue < config.demotionThreshold || parentIgnored)
+              status = Ignored
+              stacksPromotionMap(currStack) -= 1
+              false
+            else true
+          case Ignored =>
+            if (chiSqValue > config.promotionThreshold && !parentIgnored)
+              status = Noticed
+              stacksPromotionMap(currStack) += 1
+              true
+            else false
         }
+      else true
 
     /** Recursively do something to each node in the tree, starting from the
       * root
@@ -306,22 +323,6 @@ class FSTreeWrapper(
             case None        =>
           }
       }
-
-    @tailrec
-    private final def foldByStack[A](stack: List[String], z: A)(
-      op: (A, FSTree) => A,
-    ): A =
-      stack match {
-        case Nil => op(z, this)
-        case head :: tail =>
-          children.get(head) match {
-            case Some(child) => child.foldByStack(tail, op(z, this))(op)
-            case None        => z
-          }
-      }
-
-    private def get(stack: List[String]): Option[FSTree] =
-      foldByStack(stack, Option.empty[FSTree])((_, node) => Some(node))
 
     private def touches: Long = hits + misses
 

@@ -7,6 +7,7 @@ import esmeta.interpreter.*
 import esmeta.ir.{EReturnIfAbrupt, Expr, EParse, EBool}
 import esmeta.es.*
 import esmeta.es.util.*
+import esmeta.es.util.fuzzer.*
 import esmeta.es.util.Coverage.Interp
 import esmeta.state.*
 import esmeta.util.*
@@ -22,6 +23,7 @@ import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import esmeta.phase.MinifyFuzz
+import esmeta.phase.DeltaDebug._config
 
 /** coverage measurement of cfg */
 case class Coverage(
@@ -57,6 +59,76 @@ case class Coverage(
   private var nodeViews: Set[NodeView] = Set()
   private var condViewMap: Map[Cond, Map[View, Script]] = Map()
   private var condViews: Set[CondView] = Set()
+
+  // mapping from feature stacks to node/cond views
+  private val featureNodeViewMap: MMap[List[String], Map[NodeView, Script]] =
+    MMap().withDefault(_ => Map())
+  private val featureCondViewMap
+    : MMap[List[String], Map[CondView, (Option[Nearest], Script)]] =
+    MMap().withDefault(_ => Map())
+
+  private def addRawNodeView(
+    rawNodeView: NodeView,
+    script: Script,
+  ): Unit =
+    for (k <- 1 to kFs) {
+      val NodeView(node, rawView) = rawNodeView
+      rawView.foreach((rawEnclosing, feature, path) =>
+        val rawStack = feature :: rawEnclosing
+        val featureStack = rawStack.take(k)
+        if featureStack.nonEmpty then
+          val featureStackStr = featureStack.map(_.func.name)
+          featureNodeViewMap(featureStackStr).get(rawNodeView) match
+            case Some(origScript)
+                if origScript.code.length > script.code.length =>
+              featureNodeViewMap(featureStackStr) += (
+                NodeView(
+                  node,
+                  Some((featureStack.tail, featureStack.head, path)),
+                ) -> script
+              )
+            case None =>
+              featureNodeViewMap(featureStackStr) += (
+                NodeView(
+                  node,
+                  Some((featureStack.tail, featureStack.head, path)),
+                ) -> script
+              )
+            case _ => (),
+      )
+    }
+
+  private def addRawCondView(
+    rawCondView: CondView,
+    nearest: Option[Nearest],
+    script: Script,
+  ): Unit =
+    for (k <- 1 to kFs) {
+      val CondView(cond, rawView) = rawCondView
+      rawView.foreach((rawEnclosing, feature, path) =>
+        val rawStack = feature :: rawEnclosing
+        val featureStack = rawStack.take(k)
+        if featureStack.nonEmpty then
+          val featureStackStr = featureStack.map(_.func.name)
+          featureCondViewMap(featureStackStr).get(rawCondView) match
+            case Some((origNearest, origScript))
+                if origScript.code.length > script.code.length =>
+              featureCondViewMap(featureStackStr) += (
+                CondView(
+                  cond,
+                  Some((featureStack.tail, featureStack.head, path)),
+                ) -> (nearest, script)
+              )
+            case None =>
+              featureCondViewMap(featureStackStr) += (
+                CondView(
+                  cond,
+                  Some((featureStack.tail, featureStack.head, path)),
+                ) -> (nearest, script)
+              )
+            case _ => (),
+      )
+    }
 
   def apply(node: Node): Map[View, Script] = nodeViewMap.getOrElse(node, Map())
   def getScript(nv: NodeView): Option[Script] = apply(nv.node).get(nv.view)
@@ -237,10 +309,13 @@ case class Coverage(
       val nodeView = NodeView(node, view)
       touchedNodeViews += nodeView -> nearest
       getScript(nodeView) match
-        case None => update(nodeView, script); updated = true; covered = true
+        case None =>
+          update(nodeView, script); updated = true; covered = true
+          addRawNodeView(rawNodeView, script)
         case Some(originalScript) if originalScript.code.length > code.length =>
           update(nodeView, script)
           updated = true
+          addRawNodeView(rawNodeView, script)
         case Some(blockScript) => ()
 
     // update branch coverage
@@ -259,9 +334,11 @@ case class Coverage(
       getScript(condView) match
         case None =>
           update(condView, nearest, script); updated = true; covered = true
+          addRawCondView(rawCondView, nearest, script)
         case Some(origScript) if origScript.code.length > code.length =>
           update(condView, nearest, script)
           updated = true
+          addRawCondView(rawCondView, nearest, script)
         case Some(blockScript) => ()
 
     val isMinifierHitOpt = Await.result(isMinifierHitOptFuture, Duration.Inf)
@@ -270,6 +347,11 @@ case class Coverage(
       case Some(true)  => fsTrie.touchWithHit(rawStacks)
       case Some(false) => fsTrie.touchWithMiss(rawStacks)
       case _           => /* do nothing */
+    if (fsTreeConfig.doCleanup)
+      val (promotedStacks, demotedStacks) = fsTrie.flushPrmDemStacks()
+      handlePromotion(promotedStacks)
+      cleanup(demotedStacks)
+
     if (updated)
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(cfg, finalSt),
@@ -369,52 +451,61 @@ case class Coverage(
       coveredCondViews,
     )
 
-  def cleanup(): Unit = {
-    val mortalNodeViews = nodeViews.filterNot {
-      case NodeView(_, Some((tail, head, _))) =>
-        val stack = head :: tail
-        val sensitiveLength = fsTrie(stack.map(_.func.name))
-        sensitiveLength >= stack.length
-      case _ => true
-    }
-    val mortalCondViews = condViews.filterNot {
-      case CondView(cond, Some((tail, head, _))) =>
-        val stack = head :: tail
-        val sensitiveLength = fsTrie(stack.map(_.func.name))
-        sensitiveLength >= stack.length
-      case _ => true
-    }
+  def handlePromotion(
+    promotedFeatureStacks: Set[List[String]],
+  ): Unit = {
 
-    val woundScripts = mortalNodeViews.map(getScript).flatten ++
-      mortalCondViews.map(getScript).flatten
+    if (promotedFeatureStacks.nonEmpty)
+      val pNodeViews = promotedFeatureStacks.flatMap(featureNodeViewMap)
+      val pCondViews = promotedFeatureStacks.flatMap(featureCondViewMap)
+      val pScripts = Set(pNodeViews.map(_._2), pCondViews.map(_._2._2)).flatten
 
-    for (nodeView <- mortalNodeViews) {
-      val NodeView(node, view) = nodeView
-      nodeViewMap += node -> (apply(node) - view)
-    }
+      pNodeViews.foreach { case (nv, s) => update(nv, s) }
+      pCondViews.foreach { case (cv, (n, s)) => update(cv, n, s) }
+  }
 
-    for (condView <- mortalCondViews) {
-      val CondView(cond, view) = condView
-      condViewMap += cond -> (apply(cond) - view)
-      removeTargetCond(condView)
-    }
+  def cleanup(
+    demotedFeatureStacks: Set[List[String]],
+  ): Unit = {
+    if (demotedFeatureStacks.nonEmpty)
 
-    nodeViews --= mortalNodeViews
-    condViews --= mortalCondViews
-
-    for (script <- woundScripts) {
-      val count = counter(script) - 1
-      counter += (script -> count)
-      if (count == 0) {
-        counter -= script
-        _minimalScripts -= script
-        _minimalInfo -= script.name
+      val dNodeViews =
+        demotedFeatureStacks.flatMap(featureNodeViewMap).map(_._1)
+      for {
+        NodeView(n, v) <- dNodeViews
+        (enc, f, _) <- v
+      } {
+        val featureStack = f :: enc
       }
-    }
+      val dCondViews =
+        demotedFeatureStacks.flatMap(featureCondViewMap).map(_._1)
 
-    println(
-      s"cleanup: ${mortalNodeViews.size} node views, ${mortalCondViews.size} cond views, ${woundScripts.size} scripts",
-    )
+      val dScripts = dNodeViews.map(getScript).flatten ++
+        dCondViews.map(getScript).flatten
+
+      for (nodeView <- dNodeViews) {
+        val NodeView(node, view) = nodeView
+        nodeViewMap += node -> (apply(node) - view)
+      }
+
+      for (condView <- dCondViews) {
+        val CondView(cond, view) = condView
+        condViewMap += cond -> (apply(cond) - view)
+        removeTargetCond(condView)
+      }
+
+      nodeViews --= dNodeViews
+      condViews --= dCondViews
+
+      for (script <- dScripts) {
+        val count = counter(script) - 1
+        counter += (script -> count)
+        if (count == 0) {
+          counter -= script
+          _minimalScripts -= script
+          _minimalInfo -= script.name
+        }
+      }
 
   }
 
@@ -620,7 +711,10 @@ case class Coverage(
   // private helpers
   // ---------------------------------------------------------------------------
   // update mapping from nodes to scripts
-  private def update(nodeView: NodeView, script: Script): Unit =
+  private def update(
+    nodeView: NodeView,
+    script: Script,
+  ): Unit =
     val NodeView(node, view) = nodeView
     nodeViews += nodeView
     nodeViewMap += node -> updated(apply(node), view, script)
@@ -762,6 +856,12 @@ object Coverage {
     case (enclosing, feature, path) =>
       s"@ $feature${enclosing.mkString("[", ", ", "]")}:${path.getOrElse("")}"
   }
+  private def featureStackOfView(view: View) =
+    view
+      .map { case (enclosing, feature, _) => feature :: enclosing }
+      .getOrElse(Nil)
+      .map(_.func.name)
+
   sealed trait NodeOrCondView(view: View) {}
   case class NodeView(node: Node, view: View) extends NodeOrCondView(view) {
     override def toString: String = node.simpleString + stringOfView(view)

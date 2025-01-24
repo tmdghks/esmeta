@@ -58,6 +58,7 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
           },
         useSrv = config.useSrv,
         useLocalCorrelation = config.useLocalCorrelation,
+        doCleanup = config.doCleanup,
       ),
       keepBugs = config.keepBugs,
       minifyCmd = config.minifier,
@@ -209,8 +210,8 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       "set the correlation type: local or global",
     ),
     (
-      "cleanup",
-      BoolOption(c => c.doCleanup = true),
+      "no-cleanup",
+      BoolOption(c => c.doCleanup = false),
       "clean up minimals and TRs (default: false) WARNING: This will cause # of minimals to increase due to successive promotions and demotions.",
     ),
   )
@@ -236,6 +237,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
     var onlineTest: Boolean = false,
     var useSrv: Boolean = true,
     var useLocalCorrelation: Boolean = false,
-    var doCleanup: Boolean = false,
+    var doCleanup: Boolean = true,
   )
 }
