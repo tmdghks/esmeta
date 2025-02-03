@@ -20,7 +20,7 @@ for ((i = 0; i < total_files; i++)); do
   file="${files[i]}"
 
   # Run minify-runner and capture output
-  output=$(minify-runner -v swc@1.4.6 -d -f "$file" 2>/dev/null)
+  output=$(minify-runner -v swc@1.3.10 -d -f "$file" 2>/dev/null)
 
   # Get the last line of the output (true or false)
   last_line=$(echo "$output" | tail -n 1)
