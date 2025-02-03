@@ -8,6 +8,7 @@ import esmeta.util.*
 import esmeta.util.SystemUtils.*
 import esmeta.es.*
 import esmeta.es.util.Coverage.*
+import esmeta.state.Feature
 
 /** `eval` phase */
 case object Eval extends Phase[CFG, State] {
@@ -36,14 +37,19 @@ case object Eval extends Phase[CFG, State] {
       timeLimit = config.timeLimit,
     )
     val res = interp.result
+    var featureStacks: Set[List[Feature]] = Set()
     for (nv <- interp.touchedNodeViews) {
       val (NodeView(_, view), _) = nv
       view.foreach {
         case (enclosing, feature, _) =>
-          println()
-          val featureStack = (feature :: enclosing).map(_.func.name)
-          println(featureStack.mkString("\n"))
+          val featureStack = (feature :: enclosing)
+          featureStacks += featureStack
       }
+    }
+    for (featureStack <- featureStacks) {
+      val featureStackStr = featureStack.map(_.func.name).mkString("\n")
+      println(featureStackStr)
+      println()
     }
     res
 
