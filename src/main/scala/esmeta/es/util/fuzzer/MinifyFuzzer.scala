@@ -58,7 +58,9 @@ object MinifyFuzzer {
     onlineTest = onlineTest,
   ).result
 
-  val logDir: String = s"$MINIFY_FUZZ_LOG_DIR/fuzz-$dateStr"
+  def logDir(minifyCmd: Option[String]): String =
+    val minifier = minifyCmd.getOrElse("swc")
+    s"$MINIFY_FUZZ_LOG_DIR/fuzz-$dateStr-$minifier"
   val symlink: String = s"$MINIFY_FUZZ_LOG_DIR/recent"
 }
 
@@ -131,7 +133,7 @@ class MinifyFuzzer(
     fsTreeConfig = fsTreeConfig,
     minifyCmd = minifyCmd,
   ) {
-    override lazy val logDir = MinifyFuzzer.logDir
+    override lazy val logDir = MinifyFuzzer.logDir(minifyCmd)
     override lazy val symlink = MinifyFuzzer.symlink
 
     // adjust weight for active random fuzzing
@@ -360,7 +362,7 @@ class MinifyFuzzer(
     finalState: State,
     code: String,
     covered: Boolean,
-    baseLogDir: String = logDir,
+    baseLogDir: String = logDir(minifyCmd),
   ): Unit =
     val injector = ReturnInjector(cfg, finalState, timeLimit, false)
     injector.exitTag match

@@ -214,11 +214,6 @@ case object MinifyFuzz extends Phase[CFG, Coverage] {
       BoolOption(c => c.doCleanup = false),
       "clean up minimals and TRs (default: false) WARNING: This will cause # of minimals to increase due to successive promotions and demotions.",
     ),
-    (
-      "duration",
-      NumOption((c, k) => c.duration = Some(k)),
-      "set the maximum duration for fuzzing (default: INF)",
-    ),
   )
   case class Config(
     var log: Boolean = false,
