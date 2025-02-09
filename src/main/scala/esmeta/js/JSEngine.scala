@@ -62,12 +62,31 @@ object JSEngine {
           context.interrupt(ZERO)
       }
     }
+  def runAndGetStdout(
+    src: String,
+    context: Context,
+    out: ByteArrayOutputStream,
+    timeout: Option[Int] = None,
+  ): String =
+    if (!useGraal) throw NoGraalError
+    val stat = Status()
+    out.reset
+    timeout.foreach(millis => registerTimeout(context, millis, stat))
+    stat.running = true
+    try {
+      context.eval("js", src)
+      out.toString
+    } finally stat.done = true
 
-  /** run JavaScript program with timeout(secs) using GraalVM Polyglot API */
+  def usingContext[T](f: (Context, ByteArrayOutputStream) => T): Try[T] =
+    if (!useGraal) throw NoGraalError
+    val out = new ByteArrayOutputStream()
+    Using(Context.newBuilder("js").out(out).build()) { context =>
+      f(context, out)
+    }.recoverWith(e => polyglotExceptionResolver(e))
+
   def runGraal(src: String, timeout: Option[Int] = None): Try[String] =
-    createGraalContext((context, out) =>
-      runGraalUsingContextOut(src, context, out, timeout),
-    )
+    usingContext((context, out) => runAndGetStdout(src, context, out, timeout))
 
   /** run callback method using new context */
   def createGraalContext[T](

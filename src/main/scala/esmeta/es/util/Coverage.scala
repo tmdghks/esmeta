@@ -137,7 +137,7 @@ case class Coverage(
           update(nodeView, script)
           updated = true
           blockingScripts += originalScript
-        case Some(blockScript) => blockingScripts += blockScript
+        case Some(blockScript) => blockingScripts += script
 
     // update branch coverage
     for ((condView, nearest) <- interp.touchedCondViews)
@@ -149,7 +149,7 @@ case class Coverage(
           update(condView, nearest, script)
           updated = true
           blockingScripts += origScript
-        case Some(blockScript) => blockingScripts += blockScript
+        case Some(blockScript) => blockingScripts += script
 
     if (updated)
       val codeWithUseStrict = USE_STRICT + code
@@ -205,7 +205,7 @@ case class Coverage(
           if modify then update(nodeView, script)
           updated = true
           blockingScripts += originalScript
-        case Some(blockScript) => blockingScripts += blockScript
+        case Some(blockScript) => blockingScripts += script
 
     // update branch coverage
     for ((condView, nearest) <- interp.touchedCondViews)
@@ -219,7 +219,7 @@ case class Coverage(
           if modify then update(condView, nearest, script)
           updated = true
           blockingScripts += origScript
-        case Some(blockScript) => blockingScripts += blockScript
+        case Some(blockScript) => blockingScripts += script
 
     if (updated)
       _minimalInfo += script.name -> ScriptInfo(
