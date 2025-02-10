@@ -99,19 +99,6 @@ case object CmdBuildCFG extends Command("build-cfg", CmdCompile >> BuildCFG) {
 }
 
 // -----------------------------------------------------------------------------
-// Analysis of ECMA-262
-// -----------------------------------------------------------------------------
-/** `tycheck` command */
-case object CmdTypeCheck extends Command("tycheck", CmdBuildCFG >> TypeCheck) {
-  val help = "performs a type analysis of ECMA-262."
-  val examples = List(
-    "esmeta tycheck                              # type check for spec.",
-    "esmeta tycheck -tycheck:target='.*ToString' # type check with targets",
-    "esmeta tycheck -extract:target=es2022       # type check for es2022 spec.",
-  )
-}
-
-// -----------------------------------------------------------------------------
 // Interpreter & Double Debugger for ECMAScript
 // -----------------------------------------------------------------------------
 /** `parse` command */
@@ -136,14 +123,6 @@ case object CmdEval extends Command("eval", CmdBuildCFG >> Eval) {
   override val targetName = "<js>+"
 }
 
-/** `web` command */
-case object CmdWeb extends Command("web", CmdBuildCFG >> Web) {
-  val help = "starts a web server for an ECMAScript double debugger."
-  val examples = List(
-    "esmeta web    # turn on the server (Use with `esmeta-debugger-client`).",
-  )
-}
-
 // -----------------------------------------------------------------------------
 // Tester for Test262 (ECMAScript Test Suite)
 // -----------------------------------------------------------------------------
@@ -161,38 +140,16 @@ case object CmdTest262Test
 }
 
 // -----------------------------------------------------------------------------
-// ECMAScript Transformer
+// Conformance Test Generation
 // -----------------------------------------------------------------------------
-/** `inject` command */
-case object CmdInject extends Command("inject", CmdBuildCFG >> Inject) {
-  val help = "injects assertions to check final state of an ECMAScript file."
+/** `fuzz` command */
+case object CmdFuzz extends Command("fuzz", CmdBuildCFG >> Fuzz) {
+  val help = "generates JavaScript programs via fuzzing."
   val examples = List(
-    "esmeta inject a.js                               # inject assertions.",
-    "esmeta inject a.js -inject:defs -inject:out=b.js # dump with definitions.",
+    "esmeta fuzz                 # generate JavaScript programs via fuzzing.",
+    "esmeta fuzz -fuzz:out=out   # dump the generated programs to `out`",
   )
-  override val targetName = "<js>+"
-}
-
-/** `mutate` command */
-case object CmdMutate extends Command("mutate", CmdBuildCFG >> Mutate) {
-  def help = "mutates an ECMAScript program."
-  val examples = List(
-    "esmeta mutate a.js                           # mutate ECMAScript program.",
-    "esmeta mutate a.js -mutate:out=b.js          # dump the mutated program.",
-    "esmeta mutate a.js -mutate:mutator=random    # use random mutator.",
-  )
-}
-
-// -----------------------------------------------------------------------------
-// ECMAScript Static Analysis (Meta-Level Static Analysis)
-// -----------------------------------------------------------------------------
-/** `analyze` command */
-case object CmdAnalyze extends Command("analyze", CmdBuildCFG >> Analyze) {
-  val help = "analyzes an ECMAScript file using meta-level static analysis."
-  val examples = List(
-    "esmeta analyze a.js                         # analyze a.js file.",
-    "esmeta analyze a.js -extract:target=es2022  # analyze with es2022 spec.",
-    "esmeta analyze a.js -analyze:repl           # analyze in a REPL mode.",
-  )
-  override val targetName = "<js>+"
+  override def showResult(cov: es.util.Coverage): Unit =
+    println(s"- generated ${cov.size} JavaScript programs.")
+    println(cov)
 }

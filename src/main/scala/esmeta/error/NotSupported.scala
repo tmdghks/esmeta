@@ -6,6 +6,7 @@ case class NotSupported(reasonPath: NotSupported.ReasonPath)
 object NotSupported:
   type Reason = String
   type ReasonPath = List[Reason]
+  def apply(msg: String): NotSupported = NotSupported(List(msg))
   def apply(category: Category)(reasonPath: ReasonPath): NotSupported =
     NotSupported(category.name :: reasonPath)
 

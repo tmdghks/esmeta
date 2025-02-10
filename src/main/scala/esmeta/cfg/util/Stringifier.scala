@@ -6,7 +6,6 @@ import esmeta.ir.{Func => IRFunc, *}
 import esmeta.util.*
 import esmeta.util.Appender.*
 import esmeta.util.BaseUtils.*
-import esmeta.util.UId.given
 import scala.collection.mutable.ListBuffer
 
 /** stringifier for CFG */

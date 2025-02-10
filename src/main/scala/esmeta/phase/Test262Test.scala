@@ -50,6 +50,8 @@ case object Test262Test extends Phase[CFG, Summary] {
       config.progress,
       config.coverage,
       config.timeLimit,
+      config.kFs,
+      config.cp,
       config.concurrent,
       config.verbose,
     )
@@ -98,6 +100,16 @@ case object Test262Test extends Phase[CFG, Summary] {
       "turn on logging mode.",
     ),
     (
+      "k-fs",
+      NumOption((c, k) => c.kFs = k),
+      "set the k-value for feature sensitivity (default: 0).",
+    ),
+    (
+      "cp",
+      BoolOption(c => c.cp = true),
+      "turn on the call-path mode (default: false) (meaningful if k-fs > 0).",
+    ),
+    (
       "concurrent",
       NumOption((c, k) =>
         c.concurrent =
@@ -119,6 +131,8 @@ case object Test262Test extends Phase[CFG, Summary] {
     var timeLimit: Option[Int] = None,
     var withYet: Boolean = false,
     var log: Boolean = false,
+    var kFs: Int = 0,
+    var cp: Boolean = false,
     var concurrent: CP = CP.Single,
     var features: Option[List[String]] = None,
     var verbose: Boolean = false,

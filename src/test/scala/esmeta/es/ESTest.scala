@@ -1,8 +1,6 @@
 package esmeta.es
 
 import esmeta.ESMetaTest
-import esmeta.analyzer.*
-import esmeta.analyzer.domain.*
 import esmeta.cfgBuilder.CFGBuilder
 import esmeta.compiler.Compiler
 import esmeta.es.util.*
@@ -48,29 +46,14 @@ object ESTest {
 
   // eval ES codes
   def eval(
-    str: String,
+    sourceText: String,
     checkAfter: List[NormalInst] = Nil,
-    cachedAst: Option[Ast] = None,
-    filename: Option[String] = None,
-  ): State =
-    new CheckAfter(Initialize(cfg, str, cachedAst, filename), checkAfter).result
+  ): State = new CheckAfter(cfg.init.from(sourceText), checkAfter).result
+
   def evalFile(
     filename: String,
     checkAfter: List[NormalInst] = Nil,
-    cachedAst: Option[Ast] = None,
-  ): State = eval(readFile(filename), checkAfter, cachedAst, Some(filename))
-
-  // ---------------------------------------------------------------------------
-  // analyzer helpers
-  // ---------------------------------------------------------------------------
-  // analyzer
-  lazy val analyzer = ESAnalyzer(cfg)
-  import analyzer.*
-
-  // analyze ES codes
-  def analyzeFile(filename: String): analyzer.Semantics =
-    analyzer(readFile(filename).trim)
-  def analyze(str: String): Semantics = analyzer(str)
+  ): State = new CheckAfter(cfg.init.fromFile(filename), checkAfter).result
 
   // tests for ES parser
   def parseTest(ast: Ast): Ast =
@@ -87,19 +70,10 @@ object ESTest {
   def evalTest(
     str: String,
     checkAfter: List[NormalInst] = Nil,
-    cachedAst: Option[Ast] = None,
-  ): State = checkExit(eval(str, checkAfter, cachedAst))
+  ): State = checkExit(eval(str, checkAfter))
+
   def evalTestFile(
     filename: String,
     checkAfter: List[NormalInst] = Nil,
-    cachedAst: Option[Ast] = None,
-  ): State = checkExit(evalFile(filename, checkAfter, cachedAst))
-
-  // tests for ES analyzer
-  def checkExit(absSem: AbsSemantics): AbsSemantics =
-    assert(absSem.finalResult.value.getSingle == One(Undef))
-    absSem
-  def analyzeTest(str: String): AbsSemantics = checkExit(analyze(str))
-  def analyzeTestFile(filename: String): AbsSemantics =
-    checkExit(analyzeFile(filename))
+  ): State = checkExit(evalFile(filename, checkAfter))
 }

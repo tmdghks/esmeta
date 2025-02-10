@@ -141,7 +141,7 @@ object Summary {
       name = s"$name cases",
       data = toJson,
       filename = filename,
-      noSpace = false,
+      space = true,
     )
 
     /** conversion to JSON */

@@ -103,6 +103,8 @@ case class Test262(
     useProgress: Boolean = false,
     useCoverage: Boolean = false,
     timeLimit: Option[Int] = None, // default: no limit
+    kFs: Int = 0, // default: insensitive coverage
+    cp: Boolean = false,
     concurrent: CP = CP.Single,
     verbose: Boolean = false,
   ): Summary = {
@@ -127,11 +129,7 @@ case class Test262(
     )
 
     // coverage with time limit
-    lazy val cov = Coverage(
-      cfg = cfg,
-      test262 = Some(this),
-      timeLimit = timeLimit,
-    )
+    lazy val cov = Coverage(timeLimit, kFs, cp)
 
     // run tests with logging
     logForTests(
@@ -145,7 +143,11 @@ case class Test262(
         val filename = test.path
         val st =
           if (!useCoverage) evalFile(filename, log && !multiple, timeLimit)
-          else cov.run(filename)
+          else {
+            val ast = loadTest(filename)
+            val code = ast.toString(grammar = Some(cfg.grammar)).trim
+            cov.runAndCheck(Script(code, filename))._1
+          }
         val returnValue = st(GLOBAL_RESULT)
         if (returnValue != Undef) throw InvalidExit(returnValue)
       ,
@@ -214,7 +216,7 @@ case class Test262(
   ): State =
     val ast = loadTest(filename)
     val code = ast.toString(grammar = Some(cfg.grammar)).trim
-    val st = Initialize(cfg, code, Some(ast), Some(filename))
+    val st = cfg.init.from(code, ast, Some(filename))
     Interpreter(
       st = st,
       log = log,

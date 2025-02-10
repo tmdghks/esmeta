@@ -8,6 +8,8 @@ import esmeta.util.BaseUtils.*
 trait ESElem {
   override def toString: String = toString()
 
+  def toString(grammar: Grammar): String = toString(grammar = Some(grammar))
+
   /** stringify with options */
   def toString(
     detail: Boolean = true,

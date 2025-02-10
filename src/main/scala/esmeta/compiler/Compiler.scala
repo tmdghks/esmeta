@@ -8,7 +8,7 @@ import esmeta.ir.{
   Param => IRParam,
   *,
 }
-import esmeta.ir.util.{Walker => IRWalker}
+import esmeta.ir.util.{Walker => IRWalker, AllocSiteSetter, WeakUIdSetter}
 import esmeta.lang.*
 import esmeta.lang.util.{UnitWalker => LangUnitWalker}
 import esmeta.spec.*
@@ -36,7 +36,12 @@ class Compiler(
   /** compiled specification */
   lazy val result: Program =
     for (algo <- spec.algorithms) compile(algo)
-    Program(funcs.toList, spec)
+    val program = Program(funcs.toList, spec)
+    // set allocation site to AllocExpr
+    AllocSiteSetter(program)
+    // set weak uid to Inst and Expr
+    WeakUIdSetter(program)
+    program
 
   /** load manually created AOs */
   val manualAlgos = (for {
@@ -762,7 +767,7 @@ class Compiler(
     case ProductionLiteral(lhsName, rhsName) =>
       // XXX need to handle arguments, children?
       val (lhs, rhsIdx) = getProductionData(lhsName, rhsName)
-      ESyntactic(lhsName, lhs.params.map(_ => true), rhsIdx, Nil)
+      ESyntactic(lhsName, lhs.params.map(_ => true), rhsIdx, Vector())
     case ErrorObjectLiteral(name) =>
       val proto = EStr(Intrinsic(name, List("prototype")).toString)
       val (x, xExpr) = fb.newTIdWithExpr
@@ -1038,13 +1043,13 @@ class Compiler(
   /** production helpers */
   def getProductionData(lhsName: String, rhsName: String): (Lhs, Int) =
     val prod = grammar.nameMap(lhsName)
-    val rhsList = prod.rhsList.zipWithIndex.filter {
+    val rhsVec = prod.rhsVec.zipWithIndex.filter {
       case (rhs, _) if rhsName == "[empty]" => rhs.isEmpty
       case (rhs, _)                         => rhs.allNames contains rhsName
     }
-    rhsList match
-      case (rhs, idx) :: Nil => (prod.lhs, idx)
-      case _                 => error("invalid production")
+    rhsVec match
+      case Vector((rhs, idx)) => (prod.lhs, idx)
+      case _                  => error("invalid production")
 
   /** instruction helpers */
   inline def toParams(paramOpt: Option[Variable]): List[IRParam] =

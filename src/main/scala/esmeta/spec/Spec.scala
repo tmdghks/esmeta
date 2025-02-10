@@ -23,6 +23,9 @@ case class Spec(
   /** HTML Document element */
   var document: Document = Document("")
 
+  /** grammar graph */
+  lazy val grammarGraph: GrammarGraph = GrammarGraph(grammar)
+
   /** ECMAScript parser */
   lazy val esParser: ESParser = ESParser(grammar)
   lazy val scriptParser: AstFrom = esParser("Script")

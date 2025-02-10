@@ -56,6 +56,36 @@ object SystemUtils {
     nf.print(data)
     nf.close()
 
+  /** dump given data into a file and show message */
+  def dumpFile(name: Option[String], data: Any, filename: String): Unit =
+    dumpFile(data, filename)
+    name.map(name => println(s"- Dumped $name into $filename."))
+
+  /** dump given data into a file and show message */
+  def dumpFile(name: String, data: Any, filename: String): Unit =
+    dumpFile(Some(name), data, filename)
+
+  /** dump rows as tsv */
+  def dumpRows(data: Seq[Vector[String]], filename: String): Unit =
+    dumpFile(
+      data.map(_.mkString("\t")).mkString(LINE_SEP),
+      filename,
+    )
+
+  /** dump given data collection into a directory and show message */
+  def dumpDir[T](
+    name: Option[String],
+    iterable: Iterable[T],
+    dirname: String,
+    getName: T => String,
+    getData: T => Any,
+    remove: Boolean,
+  ): Unit =
+    if (remove) rmdir(dirname)
+    mkdir(dirname)
+    for (x <- iterable) dumpFile(getData(x), s"$dirname/${getName(x)}")
+    name.map(name => println(s"- Dumped $name into $dirname."))
+
   /** dump given data collection into a directory and show message */
   def dumpDir[T](
     name: String,
@@ -63,11 +93,8 @@ object SystemUtils {
     dirname: String,
     getName: T => String,
     getData: T => Any = (x: T) => x,
-    silent: Boolean = false,
-  ): Unit =
-    mkdir(dirname)
-    for (x <- iterable) dumpFile(getData(x), s"$dirname/${getName(x)}")
-    println(s"- Dumped $name into `$dirname` .")
+    remove: Boolean = false,
+  ): Unit = dumpDir(Some(name), iterable, dirname, getName, getData, remove)
 
   /** dump given data into a file and show message */
   def dumpFile(
@@ -80,28 +107,35 @@ object SystemUtils {
     if (!silent) println(s"- Dumped $name into `$filename` .")
 
   /** dump given data in a JSON format */
-  def dumpJson[T](data: T, filename: String)(using Encoder[T]): Unit =
-    dumpJson(data, filename, false)
-
   /** dump given data in a JSON format */
   def dumpJson[T](
     data: T,
     filename: String,
-    noSpace: Boolean,
-  )(using Encoder[T]): Unit =
+    space: Boolean = true,
+  )(using encoder: Encoder[T]): Unit =
     val json = data.asJson
-    dumpFile(if (noSpace) json.noSpaces else json.spaces2, filename)
+    dumpFile(if (!space) json.noSpaces else json.spaces2, filename)
+
+  /** dump given data in a JSON format and show message */
+  def dumpJson[T](
+    name: Option[String],
+    data: T,
+    filename: String,
+    space: Boolean,
+  )(using encoder: Encoder[T]): Unit =
+    dumpJson(data, filename, space)
+    name.map(name =>
+      println(s"- Dumped $name into $filename in a JSON format."),
+    )
 
   /** dump given data in a JSON format and show message */
   def dumpJson[T](
     name: String,
     data: T,
     filename: String,
-    noSpace: Boolean = false,
-    silent: Boolean = false,
-  )(using Encoder[T]): Unit =
-    dumpJson(data, filename, noSpace)
-    if (!silent) println(s"- Dumped $name into `$filename` in a JSON format.")
+    space: Boolean,
+  )(using encoder: Encoder[T]): Unit =
+    dumpJson(Some(name), data, filename, space)
 
   /** get first filename */
   def getFirstFilename(cmdConfig: CommandConfig, msg: String): String =
@@ -160,8 +194,24 @@ object SystemUtils {
     StandardCopyOption.REPLACE_EXISTING,
   )
 
+  /** create symbolic link */
+  def createSymlink(
+    link: String,
+    target: String,
+    overwrite: Boolean = false,
+  ): Unit = {
+    if (overwrite)
+      deleteFile(link)
+    Files.createSymbolicLink(
+      File(link).toPath,
+      File(target).toPath,
+    )
+  }
+
   /** create directories */
-  def mkdir(name: String): Unit = File(name).mkdirs
+  def mkdir(name: String, remove: Boolean = false): Unit =
+    if (remove) rmdir(name)
+    File(name).mkdirs
 
   /** clean directories */
   def cleanDir(name: String) = for (file <- walkTree(name)) file.delete
@@ -176,6 +226,14 @@ object SystemUtils {
       f.delete()
     deleteRecursively(File(name))
   }
+
+  /** list directory */
+  def listFiles(name: String): List[File] = listFiles(File(name))
+  def listFiles(dir: File): List[File] =
+    Option(dir.listFiles)
+      .map(_.toList)
+      .getOrElse(List())
+      .filter(!_.getName.startsWith("."))
 
   /** file existence check */
   def exists(name: String): Boolean = File(name).exists

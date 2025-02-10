@@ -11,20 +11,16 @@ _esmeta_completions() {
   local cur prev opts lastc informats outformats datafiles
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  cmdList="help extract compile build-cfg tycheck parse eval web test262-test inject mutate analyze"
+  cmdList="help extract compile build-cfg parse eval test262-test fuzz"
   globalOpt="-silent -error -status -time -test262dir"
   helpOpt=""
   extractOpt="-extract:target -extract:log -extract:eval -extract:repl"
   compileOpt="-compile:log -compile:log-with-loc"
   buildcfgOpt="-build-cfg:log -build-cfg:dot -build-cfg:pdf"
-  tycheckOpt="-tycheck:target -tycheck:repl -tycheck:repl-continue -tycheck:ignore -tycheck:update-ignore -tycheck:log -tycheck:detail-log -tycheck:tysens"
   parseOpt="-parse:debug"
   evalOpt="-eval:timeout -eval:multiple -eval:log -eval:detail-log"
-  webOpt="-web:port"
-  test262testOpt="-test262-test:target -test262-test:features -test262-test:progress -test262-test:coverage -test262-test:timeout -test262-test:with-yet -test262-test:log -test262-test:concurrent -test262-test:verbose"
-  injectOpt="-inject:defs -inject:out -inject:log"
-  mutateOpt="-mutate:out -mutate:mutator -mutate:untilValid"
-  analyzeOpt="-analyze:repl"
+  test262testOpt="-test262-test:target -test262-test:features -test262-test:progress -test262-test:coverage -test262-test:timeout -test262-test:with-yet -test262-test:log -test262-test:k-fs -test262-test:cp -test262-test:concurrent -test262-test:verbose"
+  fuzzOpt="-fuzz:log-interval -fuzz:debug -fuzz:timeout -fuzz:trial -fuzz:duration -fuzz:seed -fuzz:k-fs -fuzz:cp"
   # completion for commands
   case "${COMP_CWORD}" in
     1)
@@ -53,10 +49,6 @@ _esmeta_completions() {
           COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt}"))
           return 0
           ;;
-        tycheck)
-          COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${tycheckOpt}"))
-          return 0
-          ;;
         parse)
           COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${parseOpt}"))
           return 0
@@ -65,24 +57,12 @@ _esmeta_completions() {
           COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${evalOpt}"))
           return 0
           ;;
-        web)
-          COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${webOpt}"))
-          return 0
-          ;;
         test262-test)
           COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${test262testOpt}"))
           return 0
           ;;
-        inject)
-          COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${injectOpt}"))
-          return 0
-          ;;
-        mutate)
-          COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${mutateOpt}"))
-          return 0
-          ;;
-        analyze)
-          COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${analyzeOpt}"))
+        fuzz)
+          COMPREPLY=($(compgen -W "${globalOpt} ${extractOpt} ${compileOpt} ${buildcfgOpt} ${fuzzOpt}"))
           return 0
           ;;
       esac

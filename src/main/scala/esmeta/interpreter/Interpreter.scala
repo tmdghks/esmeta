@@ -1,15 +1,18 @@
 package esmeta.interpreter
 
 import esmeta.{EVAL_LOG_DIR, LINE_SEP}
-import esmeta.analyzer.*
 import esmeta.cfg.*
 import esmeta.error.*
 import esmeta.error.NotSupported.{*, given}
-import esmeta.error.NotSupported.Category.*
 import esmeta.ir.{Func => IRFunc, *}
 import esmeta.es.*
 import esmeta.parser.{ESParser, ESValueParser}
 import esmeta.state.*
+import esmeta.spec.{
+  SyntaxDirectedOperationHead,
+  AbstractOperationHead,
+  BuiltinHead,
+}
 import esmeta.ty.*
 import esmeta.util.BaseUtils.{error => _, *}
 import esmeta.util.SystemUtils.*
@@ -27,8 +30,11 @@ class Interpreter(
   val detail: Boolean = false,
   val logDir: String = EVAL_LOG_DIR,
   val timeLimit: Option[Int] = None,
+  val keepProvenance: Boolean = false,
 ) {
   import Interpreter.*
+
+  lazy val startTime: Long = System.currentTimeMillis
 
   /** final state */
   lazy val result: State = timeout(
@@ -57,7 +63,12 @@ class Interpreter(
 
       // garbage collection
       iter += 1
-      if (!detail && iter % 100_000 == 0) GC(st)
+      if (iter % 100_000 == 0) {
+        for (limit <- timeLimit)
+          val duration = System.currentTimeMillis - startTime
+          if (duration / 1000 > limit) throw TimeoutException("interp")
+        if (!detail) GC(st)
+      }
 
       // cursor
       eval(st.context.cursor)
@@ -92,15 +103,10 @@ class Interpreter(
     node match {
       case Block(_, insts, _) =>
         for (inst <- insts) eval(inst); st.context.moveNext
-      case Branch(_, _, cond, thenNode, elseNode) =>
-        st.context.cursor = Cursor(
-          eval(cond) match {
-            case Bool(true)  => thenNode
-            case Bool(false) => elseNode
-            case v           => throw NoBoolean(cond, v)
-          },
-          st.func,
-        )
+      case branch: Branch =>
+        eval(branch.cond) match
+          case Bool(bool) => moveBranch(branch, bool)
+          case v          => throw NoBoolean(branch.cond, v)
       case call: Call => eval(call)
     }
 
@@ -226,15 +232,15 @@ class Interpreter(
     case EGetChildren(ast) =>
       eval(ast).asAst match
         case syn: Syntactic =>
-          st.allocList(syn.children.flatten.map(AstValue(_)))
+          st.allocList(syn.children.flatten.map(AstValue(_)).toList)
         case ast => throw InvalidASTChildren(ast)
     case EGetItems(nt, ast) =>
       val name = eval(nt) match
         case Nt(name, _) => name
         case v           => throw NoNt(nt, v)
-      st.allocList(eval(ast).asAst.getItems(name).map(AstValue(_)))
+      st.allocList(eval(ast).asAst.getItems(name).map(AstValue(_)).toList)
     case EYet(msg) =>
-      throw NotSupported(Metalanguage)(List(msg))
+      throw NotSupported(msg)
     case EContains(list, elem) =>
       val l = eval(list).getList(list, st)
       val e = eval(elem)
@@ -500,6 +506,24 @@ class Interpreter(
     st.define(x, value)
     st.context.moveNext
 
+  /** sdo with default case */
+  val defaultCases = List(
+    "Contains",
+    "AllPrivateIdentifiersValid",
+    "ContainsArguments",
+  )
+
+  /** set return value and move to the exit node */
+  def moveBranch(branch: Branch, cond: Boolean): Unit =
+    st.context.cursor = Cursor(
+      if (cond) branch.thenNode
+      else branch.elseNode,
+      st.func,
+    )
+
+  /** set return value and move to the exit node */
+  def moveExit: Unit = st.context.cursor = ExitCursor(st.func)
+
   // ---------------------------------------------------------------------------
   // private helpers
   // ---------------------------------------------------------------------------
@@ -521,8 +545,76 @@ class Interpreter(
     mkdir(logDir)
     getPrintWriter(s"$logDir/log")
 
-  /** cache to get syntax-directed operation (SDO) */
-  private val getSdo = cached[(Ast, String), Option[(Ast, Func)]](_.getSdo(_))
+  /** get syntax-directed operation(SDO) */
+  private val getSdo = cached[(Ast, String), Option[(Ast, Func)]] {
+    case (ast, operation) =>
+      val fnameMap = cfg.fnameMap
+      ast.chains.foldLeft[Option[(Ast, Func)]](None) {
+        case (None, ast0) =>
+          val subIdx = getSubIdx(ast0)
+          val fname = s"${ast0.name}[${ast0.idx},${subIdx}].$operation"
+          fnameMap.get(fname) match
+            case Some(sdo) => Some(ast0, sdo)
+            case None if defaultCases contains operation =>
+              Some(ast0, fnameMap(s"<DEFAULT>.$operation"))
+            case _ => None
+        case (res: Some[_], _) => res
+      }
+  }
+
+  /** get sub index of parsed Ast */
+  private val getSubIdx = cached[Ast, Int] {
+    case lex: Lexical => 0
+    case Syntactic(name, _, rhsIdx, children) =>
+      val rhs = cfg.grammar.nameMap(name).rhsVec(rhsIdx)
+      val optionals = (for {
+        ((_, opt), child) <- rhs.ntsWithOptional zip children if opt
+      } yield !child.isEmpty)
+      optionals.reverse.zipWithIndex.foldLeft(0) {
+        case (acc, (true, idx)) => acc + scala.math.pow(2, idx).toInt
+        case (acc, _)           => acc
+      }
+  }
+
+  // create a new context
+  private def createContext(
+    call: Call,
+    func: Func,
+    locals: MMap[Local, Value],
+    prevCtxt: Context,
+  ): Context = createContext(call, func, locals, Some(prevCtxt))
+  private def createContext(
+    call: Call,
+    func: Func,
+    locals: MMap[Local, Value],
+    prevCtxt: Option[Context] = None,
+  ): Context = if (keepProvenance) {
+    lazy val prevFeatureStack = prevCtxt.fold(Nil)(_.featureStack)
+    lazy val prevCallPath = prevCtxt.fold(CallPath())(_.callPath)
+    lazy val prevNearest = prevCtxt.flatMap(_.nearest)
+    func.head match
+      case Some(head: SyntaxDirectedOperationHead) =>
+        val feature = SyntacticFeature(func, head)
+        val nearest = for {
+          case AstValue(ast @ Syntactic(name, _, idx, _)) <- locals.get(
+            Name("this"),
+          )
+          loc <- ast.loc
+          ty = AstSingleTy(name, idx, ast.subIdx)
+        } yield Nearest(ty, loc)
+        Context(func, locals, feature :: prevFeatureStack, nearest)
+      case Some(head: BuiltinHead) =>
+        val feature = BuiltinFeature(func, head)
+        Context(func, locals, feature :: prevFeatureStack)
+      case _ =>
+        Context(
+          func,
+          locals,
+          prevFeatureStack,
+          prevNearest,
+          prevCallPath + call,
+        )
+  } else Context(func, locals)
 }
 
 /** IR interpreter with a CFG */
@@ -561,7 +653,7 @@ object Interpreter {
       case (_, "TRV") if TRV.of.contains(name) =>
         TRV.of(name)(str)
       case ("RegularExpressionLiteral", name) =>
-        throw NotSupported(Feature)(List("RegExp"))
+        throw NotSupported("RegExp")
       case _ =>
         throw InvalidAstField(lex, Str(sdoName))
     }
@@ -737,13 +829,10 @@ object Interpreter {
       case (MOp.Sinh, List(Math(x)))  => Math(sinh(x.toDouble))
       case (MOp.Tanh, List(Math(x)))  => Math(tanh(x.toDouble))
       case (MOp.Acos, List(Math(x)))  => Math(acos(x.toDouble))
-      case (MOp.Acosh, List(Math(x))) =>
-        throw NotSupported(Metalanguage)("acosh")
-      case (MOp.Asinh, List(Math(x))) =>
-        throw NotSupported(Metalanguage)("asinh")
-      case (MOp.Atanh, List(Math(x))) =>
-        throw NotSupported(Metalanguage)("atanh")
-      case (MOp.Asin, List(Math(x))) => Math(asin(x.toDouble))
+      case (MOp.Acosh, List(Math(x))) => throw NotSupported("acosh")
+      case (MOp.Asinh, List(Math(x))) => throw NotSupported("asinh")
+      case (MOp.Atanh, List(Math(x))) => throw NotSupported("atanh")
+      case (MOp.Asin, List(Math(x)))  => Math(asin(x.toDouble))
       case (MOp.Atan2, List(Math(x), Math(y))) =>
         Math(atan2(x.toDouble, y.toDouble))
       case (MOp.Atan, List(Math(x)))  => Math(atan(x.toDouble))

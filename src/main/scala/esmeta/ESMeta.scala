@@ -63,23 +63,13 @@ object ESMeta extends Git(BASE_DIR) {
   /** commands */
   val commands: List[Command[_]] = List(
     CmdHelp,
-    // Mechanized Specification Extraction
     CmdExtract,
     CmdCompile,
     CmdBuildCFG,
-    // Analysis of ECMA-262
-    CmdTypeCheck,
-    // Interpreter & Double Debugger for ECMAScript
     CmdParse,
     CmdEval,
-    CmdWeb,
-    // Tester for Test262 (ECMAScript Test Suite)
     CmdTest262Test,
-    // ECMAScript Transformer
-    CmdInject,
-    CmdMutate,
-    // ECMAScript Static Analysis (Meta-Level Static Analysis)
-    CmdAnalyze,
+    CmdFuzz,
   )
   val cmdMap = commands.foldLeft[Map[String, Command[_]]](Map()) {
     case (map, cmd) => map + (cmd.name -> cmd)
@@ -88,23 +78,13 @@ object ESMeta extends Git(BASE_DIR) {
   /** phases */
   var phases: List[Phase[_, _]] = List(
     Help,
-    // Mechanized Specification Extraction
     Extract,
     Compile,
     BuildCFG,
-    // Analysis of ECMA-262
-    TypeCheck,
-    // Interpreter & Double Debugger for ECMAScript
     Parse,
     Eval,
-    Web,
-    // Tester for Test262 (ECMAScript Test Suite)
     Test262Test,
-    // ECMAScript Transformer
-    Inject,
-    Mutate,
-    // ECMAScript Static Analysis (Meta-Level Static Analysis)
-    Analyze,
+    Fuzz,
   )
 
   /** command options */
