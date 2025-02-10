@@ -69,13 +69,17 @@ class Fuzzer(
       genStatHeader(selector.names, selStatTsv)
       genStatHeader(mutator.names, mutStatTsv)
     })
+    val size = initPool.size
     time(
       s"- initializing program pool with ${initPool.size} programs", {
         for {
-          (synthesizer, rawCode) <- initPool
+          ((synthesizer, rawCode), i) <- initPool.toList.zipWithIndex
           code <- optional(scriptParser.from(rawCode).toString(grammar))
         } {
-          debugging(f"[${synthesizer.name}%-30s] $code")
+          debugging {
+            val header = s"${synthesizer.name} (${i + 1}/$size)"
+            f"[$header%-30s] $code"
+          }
           add(code)
         }
       },
@@ -93,7 +97,6 @@ class Fuzzer(
           case None        => while (!timeout) fuzz
       },
     )
-
     // finish logging
     logInterval.map(_ => {
       logging
@@ -101,7 +104,6 @@ class Fuzzer(
       selStatTsv.close
       mutStatTsv.close
     })
-
     cov
 
   /** current program pool */

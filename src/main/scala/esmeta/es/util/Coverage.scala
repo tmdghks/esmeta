@@ -285,7 +285,7 @@ class Coverage(
     cond.elem match
       case _ if nearest.isEmpty         => /* do nothing */
       case Branch(_, _, EBool(_), _, _) => /* do nothing */
-      // TODO: case b: Branch if b.isChildPresentCheck(cfg) => /* do nothing */
+      // case b: Branch if b.isChildPresentCheck(cfg) => /* do nothing */
       case ref: WeakUIdRef[EReturnIfAbrupt]
           if !ref.get.check => /* do nothing */
       case _ if getScript(neg).isDefined => removeTargetCond(neg)
@@ -380,6 +380,7 @@ object Coverage {
   ) extends Interpreter(
       initSt,
       timeLimit = timeLimit,
+      keepProvenance = true,
     ) {
     // program infos
     var touchedNodeViews: Map[NodeView, Option[Nearest]] = Map()

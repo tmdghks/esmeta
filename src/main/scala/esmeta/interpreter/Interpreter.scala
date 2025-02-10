@@ -145,7 +145,7 @@ class Interpreter(
           val newLocals =
             getLocals(func.irFunc.params, vs, call, clo) ++ captured
           st.callStack ::= CallContext(st.context, lhs)
-          st.context = Context(func, newLocals)
+          st.context = createContext(call, func, newLocals, st.context)
         case cont @ Cont(func, captured, callStack) => {
           val needWrapped = st.context.func.isReturnComp
           val vs =
@@ -155,7 +155,8 @@ class Interpreter(
           val newLocals =
             getLocals(func.irFunc.params, vs, call, cont) ++ captured
           st.callStack = callStack.map(_.copied)
-          st.context = Context(func, newLocals)
+          val prevCtxt = st.callStack.headOption.map(_.context)
+          st.context = createContext(call, func, newLocals, prevCtxt)
         }
         case v => throw NoFunc(fexpr, v)
     case ISdoCall(lhs, base, method, args) =>
@@ -171,7 +172,7 @@ class Interpreter(
                 Clo(sdo, Map()),
               )
               st.callStack ::= CallContext(st.context, lhs)
-              st.context = Context(sdo, newLocals)
+              st.context = createContext(call, sdo, newLocals, st.context)
             case None => throw InvalidAstField(syn, Str(method))
         case lex: Lexical =>
           setCallResult(lhs, Interpreter.eval(lex, method))
