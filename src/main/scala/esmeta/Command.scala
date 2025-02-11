@@ -154,6 +154,19 @@ case object CmdFuzz extends Command("fuzz", CmdBuildCFG >> Fuzz) {
     println(cov)
 }
 
+case object CmdSelectiveFuzz
+  extends Command("selective-fuzz", CmdBuildCFG >> SelectiveFuzz) {
+  val help =
+    "generates JavaScript programs via fuzzing with selective coverage."
+  val examples = List(
+    "esmeta selective-fuzz                 # generate JavaScript programs via fuzzing.",
+    "esmeta selective-fuzz -fuzz:out=out   # dump the generated programs to `out`",
+  )
+  override def showResult(cov: es.util.Coverage): Unit =
+    println(s"- generated ${cov.size} JavaScript programs.")
+    println(cov)
+}
+
 case object CmdConformTest
   extends Command("conform-test", CmdBuildCFG >> ConformTest) {
   val help = "conformance test."

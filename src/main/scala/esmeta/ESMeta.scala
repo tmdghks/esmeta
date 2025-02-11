@@ -70,6 +70,7 @@ object ESMeta extends Git(BASE_DIR) {
     CmdEval,
     CmdTest262Test,
     CmdFuzz,
+    CmdSelectiveFuzz,
     CmdConformTest,
   )
   val cmdMap = commands.foldLeft[Map[String, Command[_]]](Map()) {
@@ -86,6 +87,7 @@ object ESMeta extends Git(BASE_DIR) {
     Eval,
     Test262Test,
     Fuzz,
+    SelectiveFuzz,
     ConformTest,
   )
 

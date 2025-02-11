@@ -106,15 +106,22 @@ object JSTrans {
     }
 
   def checkTranspileDiffSrv(code: String, cmd: Option[String]): Boolean =
+    checkTranspileDiffSrvOpt(code, cmd).getOrElse(false)
+
+  def checkTranspileDiffSrvOpt(
+    code: String,
+    cmd: Option[String],
+  ): Option[Boolean] =
     try {
       val diffResult = JSTransServer.queryDiff(code, cmd).split(LINE_SEP).last
-      if diffResult == "true" then true
-      else if diffResult == "false" then false
+      if diffResult == "true" then Some(true)
+      else if diffResult == "false" then Some(false)
+      else if diffResult == "none" then None
       else {
         throw new Exception(s"Invalid diff result: $diffResult")
       }
     } catch {
-      case err => false
+      case err => None
     }
 
   /** indicating the result of transpilation was faillure */
@@ -123,15 +130,9 @@ object JSTrans {
 }
 
 object JSTransServer {
-  private def serverUrl(port: Int = 8282): String =
-    s"http://127.0.0.1:$port/"
+  val port = 8282
+  val serverUrl = s"http://127.0.0.1:$port/"
 
-  val portMap = Map(
-    "swc" -> 8282,
-    "terser" -> 8283,
-    "babel" -> 8284,
-    "swcES2015" -> 8285,
-  )
   val backend = DefaultSyncBackend()
 
   def queryDiff(code: String, cmd: Option[String]): String = {
@@ -151,9 +152,8 @@ object JSTransServer {
       case Some("swcES2015") | Some("SwcES2015") =>
         "&notcompress=true&target=es2015"
       case _ => ""
-    val serverUrlWithPort = serverUrl(portMap(cmd.getOrElse("swc")))
     val url =
-      s"$serverUrlWithPort?codeOrFilePath=$encodedCode&version=$version&diff=true" + additionalOptions
+      s"$serverUrl?codeOrFilePath=$encodedCode&version=$version&diff=true" + additionalOptions
     val request = basicRequest.get(uri"$url")
 
     val response = request.send(backend)
@@ -164,8 +164,8 @@ object JSTransServer {
       case Left(error) =>
         if response.code == StatusCode(400) then
           println(s"MinifyServer Error: ${response.code} $error, with $code");
-          "false"
-        else "false"
+          "none"
+        else "none"
     }
   }
 

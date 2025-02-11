@@ -20,7 +20,7 @@ val COMPILE_LOG_DIR = s"$LOG_DIR/compile"
 val CFG_LOG_DIR = s"$LOG_DIR/cfg"
 val INJECT_LOG_DIR = s"$LOG_DIR/inject"
 val FUZZ_LOG_DIR = s"$LOG_DIR/fuzz"
-val SELECTIVE_FUZZ_LOG_DIR = s"$LOG_DIR/minify-fuzz"
+val SELECTIVE_FUZZ_LOG_DIR = s"$LOG_DIR/selective-fuzz"
 val EVAL_LOG_DIR = s"$LOG_DIR/eval"
 val TEST262TEST_LOG_DIR = s"$LOG_DIR/test262"
 
