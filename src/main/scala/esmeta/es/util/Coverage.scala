@@ -144,7 +144,7 @@ class Coverage(
           false
       val isSwcES2015Transpilable =
         if (useSwcES2015)
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("swc2015"))
+          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("swcES2015"))
         else
           false
       val isBabelTranspilable =
