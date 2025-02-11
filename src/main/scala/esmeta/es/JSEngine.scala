@@ -34,15 +34,15 @@ object JSEngine {
   /** JavaScript engines */
   enum Engine:
     case Graal, D8, Js, Node
-    val run: String => Try[String] = runWithTimeout(_, None)
-    val runWithTimeout: (String, Option[Int]) => Try[String] = this match
+    lazy val run: String => Try[String] = runWithTimeout(_, None)
+    lazy val runWithTimeout: (String, Option[Int]) => Try[String] = this match
       case Graal => runGraal(_, _)
       case D8    => runD8(_, _)
       case Js    => runJs(_, _)
       case Node  => runNode(_, _)
 
   /** default engine */
-  val default: Option[Engine] =
+  lazy val default: Option[Engine] =
     import Engine.*
     if (JSEngine.useGraal) Some(Graal)
     else if (JSEngine.useD8) Some(D8)
