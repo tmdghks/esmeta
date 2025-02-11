@@ -33,29 +33,38 @@ case object ConformTest extends Phase[CFG, Unit] {
     val transpiler = config.transpiler
     val logDir = s"$baseDir/test/$transpiler"
     mkdir(logDir)
-    val scripts = getScripts(s"$baseDir/script")
+    val scripts = getScripts(scriptDir)
     val totalCount = scripts.size
     val prefix = globalClearingCode
-    for {
-      (Script(code, name), i) <- scripts.zipWithIndex
-      assertion = readFile(s"$assertionDir/$name")
-      isNormal = assertion.split(LINE_SEP).head.contains("[EXIT] normal")
-      transpiled <- JSTrans.transpile(code, Some(transpiler)) match
-        case Success(t) => Some(t)
-        case Failure(e) =>
-          log(logDir, name, i, code, "", "", e.getMessage)
-          None
-      injected = {
-        if (isNormal) List(prefix, transpiled, wrap(assertion))
-        else List(assertion, prefix, transpiled)
-      }.mkString(LINE_SEP)
-      reason <- engine.run(injected) match
-        case Success(msg) if msg.isEmpty =>
-          if (isNormal) None
-          else Some("Should have thrown an exception")
-        case Success(msg) => Some(msg)
-        case Failure(e)   => Some(e.getMessage)
-    } log(logDir, name, i, code, transpiled, injected, reason)
+    val progress = ProgressBar(
+      "conformance test for scripts",
+      scripts.zipWithIndex,
+      getName = { case ((x, _), _) => x.name },
+      concurrent = ConcurrentPolicy.Auto,
+      errorHandler = (e, _, name) => println(s"Error: $name: $e"),
+    )
+    for (pair <- progress) {
+      val (Script(code, name), i) = pair
+      val assertion = readFile(s"$assertionDir/$name.js")
+      val isNormal = assertion.split(LINE_SEP).head.contains("[EXIT] normal")
+      for {
+        transpiled <- JSTrans.transpile(code, Some(transpiler)) match
+          case Success(t) => Some(t)
+          case Failure(e) =>
+            log(logDir, name, i, code, "", "", e.getMessage)
+            None
+        injected = {
+          if (isNormal) List(prefix, transpiled, wrap(assertion))
+          else List(assertion, prefix, transpiled)
+        }.mkString(LINE_SEP)
+        reason <- engine.run(injected) match
+          case Success(msg) if msg.isEmpty =>
+            if (isNormal) None
+            else Some("Should have thrown an exception")
+          case Success(msg) => Some(msg)
+          case Failure(e)   => Some(e.getMessage)
+      } log(logDir, name, i, code, transpiled, injected, reason)
+    }
     val bugCount: Int = bugIndexCounter.get
     println(s"Total: $totalCount, Bugs: $bugCount")
     println(s"Bug rate: ${bugCount.toDouble / totalCount * 100}%")
@@ -81,8 +90,9 @@ case object ConformTest extends Phase[CFG, Unit] {
   // get scripts from the given directory
   private def getScripts(dirname: String) = for {
     script <- listFiles(dirname)
-    name = script.getName
-    if jsFilter(name)
+    filename = script.getName
+    if jsFilter(filename)
+    name = removedExt(filename)
     code = readFile(script.getPath).linesIterator
       .filterNot(_.trim.startsWith("//"))
       .mkString("\n")
@@ -167,7 +177,7 @@ case object ConformTest extends Phase[CFG, Unit] {
     (
       "transpiler",
       StrOption((c, s) => c.transpiler = s),
-      "transpiler to use.",
+      "transpiler to use (default: swc).",
     ),
     (
       "debug",
