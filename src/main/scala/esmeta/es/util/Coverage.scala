@@ -13,18 +13,12 @@ import esmeta.util.*
 import esmeta.util.SystemUtils.*
 import io.circe.*, io.circe.syntax.*
 import math.Ordering.Implicits.seqOrdering
-import esmeta.es.JSTrans
-import scala.concurrent.{Future, Await}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 
 /** coverage measurement in CFG */
 class Coverage(
   timeLimit: Option[Int] = None,
   kFs: Int = 0,
   cp: Boolean = false,
-  logTranspilable: Boolean = false,
-  transpiler: Option[List[String]] = None,
 ) {
   import Coverage.{*, given}
   val jsonProtocol = JsonProtocol(cfg)
@@ -60,27 +54,6 @@ class Coverage(
   // target conditional branches
   def targetCondViews: Map[Cond, Map[View, Option[Nearest]]] = _targetCondViews
   private var _targetCondViews: Map[Cond, Map[View, Option[Nearest]]] = Map()
-
-  lazy val useSwc = transpiler.exists(_.contains("swc"))
-  lazy val useTerser = transpiler.exists(_.contains("terser"))
-  lazy val useSwcES2015 = transpiler.exists(_.contains("swcES2015"))
-  lazy val useBabel = transpiler.exists(_.contains("babel"))
-
-  def swcTranspilableRate = _minimalInfo.values.count(
-    _.swcTranspilable.getOrElse(false),
-  ) / _minimalInfo.size.toDouble
-
-  def terserTranspilableRate = _minimalInfo.values.count(
-    _.terserTranspilable.getOrElse(false),
-  ) / _minimalInfo.size.toDouble
-
-  def swcES2015TranspilableRate = _minimalInfo.values.count(
-    _.swcES2015Transpilable.getOrElse(false),
-  ) / _minimalInfo.size.toDouble
-
-  def babelTranspilableRate = _minimalInfo.values.count(
-    _.babelTranspilable.getOrElse(false),
-  ) / _minimalInfo.size.toDouble
 
   /** evaluate a given ECMAScript program, update coverage, and return
     * evaluation result with whether it succeeds to increase coverage
@@ -133,65 +106,12 @@ class Coverage(
 
     val codeWithUseStrict = USE_STRICT + code + LINE_SEP
 
-    val isSwcTranspilableFuture = Future {
-      if (useSwc)
-        JSTrans.checkTranspileDiffSrv(code, Some("swc"))
-      else
-        false
-    }
-
-    val isTerserTranspilableFuture = Future {
-      if (useTerser)
-        JSTrans.checkTranspileDiffSrv(code, Some("terser"))
-      else
-        false
-    }
-
-    val isSwcES2015TranspilableFuture = Future {
-      if (useSwcES2015)
-        JSTrans.checkTranspileDiffSrv(code, Some("swcES2015"))
-      else
-        false
-    }
-
-    val isBabelTranspilableFuture = Future {
-      if (useBabel)
-        JSTrans.checkTranspileDiffSrv(code, Some("babel"))
-      else
-        false
-    }
-
     // update script info
     if (updated)
-      val isSwcTranspilable =
-        if (useSwc)
-          Await.result(isSwcTranspilableFuture, Duration.Inf)
-        else
-          false
-      val isTerserTranspilable =
-        if (useTerser)
-          Await.result(isTerserTranspilableFuture, Duration.Inf)
-        else
-          false
-      val isSwcES2015Transpilable =
-        if (useSwcES2015)
-          Await.result(isSwcES2015TranspilableFuture, Duration.Inf)
-        else
-          false
-      val isBabelTranspilable =
-        if (useBabel)
-          Await.result(isBabelTranspilableFuture, Duration.Inf)
-        else
-          false
-
       _minimalInfo += script.name -> ScriptInfo(
         ConformTest.createTest(initSt, finalSt),
         interp.touchedNodeViews.map(_._1),
         interp.touchedCondViews.map(_._1),
-        swcTranspilable = Some(isSwcTranspilable),
-        terserTranspilable = Some(isTerserTranspilable),
-        swcES2015Transpilable = Some(isSwcES2015Transpilable),
-        babelTranspilable = Some(isBabelTranspilable),
       )
     // assert: _minimalScripts ~= _minimalInfo.keys
 
@@ -510,10 +430,6 @@ object Coverage {
     test: ConformTest,
     touchedNodeViews: Iterable[NodeView],
     touchedCondViews: Iterable[CondView],
-    swcTranspilable: Option[Boolean] = None,
-    terserTranspilable: Option[Boolean] = None,
-    swcES2015Transpilable: Option[Boolean] = None,
-    babelTranspilable: Option[Boolean] = None,
   )
 
   /* syntax-sensitive views */

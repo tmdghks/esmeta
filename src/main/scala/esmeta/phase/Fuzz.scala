@@ -28,8 +28,6 @@ case object Fuzz extends Phase[CFG, Coverage] {
       duration = config.duration,
       kFs = config.kFs,
       cp = config.cp,
-      logTranspilable = config.logTranspilable,
-      transpiler = config.transpiler,
     )
   }
 
@@ -39,16 +37,6 @@ case object Fuzz extends Phase[CFG, Coverage] {
       "log-interval",
       NumOption((c, k) => c.logInterval = Some(k)),
       "turn on logging mode and set logging interval (default: 600 seconds).",
-    ),
-    (
-      "log-transpilable",
-      BoolOption(c => c.logTranspilable = true),
-      "turn on logging ratio of transpilable programs.",
-    ),
-    (
-      "transpiler",
-      StrListOption((c, k) => c.transpiler = Some(k)),
-      "set transpiler (default: None).",
     ),
     (
       "debug",
@@ -92,8 +80,6 @@ case object Fuzz extends Phase[CFG, Coverage] {
   case class Config(
     var out: Option[String] = None,
     var logInterval: Option[Int] = Some(600),
-    var logTranspilable: Boolean = false,
-    var transpiler: Option[List[String]] = None,
     var debug: Int = 0,
     var timeLimit: Option[Int] = Some(1),
     var trial: Option[Int] = None,

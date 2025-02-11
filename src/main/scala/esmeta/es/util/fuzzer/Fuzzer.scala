@@ -28,8 +28,6 @@ object Fuzzer {
     duration: Option[Int] = None, // `None` denotes no bound
     kFs: Int = 0,
     cp: Boolean = false,
-    logTranspilable: Boolean = false,
-    transpiler: Option[List[String]] = None,
   ): Coverage = new Fuzzer(
     logInterval,
     debug,
@@ -39,8 +37,6 @@ object Fuzzer {
     duration,
     kFs,
     cp,
-    logTranspilable,
-    transpiler,
   ).result
 
   // debugging levels
@@ -59,8 +55,6 @@ class Fuzzer(
   duration: Option[Int] = None, // `None` denotes no bound
   kFs: Int = 0,
   cp: Boolean = false,
-  logTranspilable: Boolean = false, // log transpilable ratio
-  transpiler: Option[List[String]] = None, // transpiler target
 ) {
   import Fuzzer.*
 
@@ -76,16 +70,6 @@ class Fuzzer(
       genStatHeader(mutator.names, mutStatTsv)
     })
     val size = initPool.size
-
-    if logTranspilable then
-      debugging(s"- logging transpilable: $logTranspilable - ")
-      debugging(
-        s" transpiler: ${transpiler.map(_.mkString(", ")).getOrElse("None")}",
-      )
-      debugging("useSwc: " + useSwc)
-      debugging("useTerser: " + useTerser)
-      debugging("useBabel: " + useBabel)
-      debugging("useSwcES2015: " + useSwcES2015)
 
     time(
       s"- initializing program pool with ${initPool.size} programs", {
@@ -248,7 +232,7 @@ class Fuzzer(
   val scriptParser = cfg.scriptParser
 
   /** coverage */
-  val cov: Coverage = Coverage(timeLimit, kFs, cp, logTranspilable, transpiler)
+  val cov: Coverage = Coverage(timeLimit, kFs, cp)
 
   /** target selector */
   val selector: TargetSelector = WeightedSelector(
@@ -330,13 +314,6 @@ class Fuzzer(
       "node(#)",
       "branch(#)",
     )
-    if (logTranspilable)
-      if (useSwc) header ++= Vector("swc-transpilable(%)")
-      if (useTerser) header ++= Vector("terser-transpilable(%)")
-      if (useBabel) header ++= Vector("babel-transpilable(%)")
-      if (useSwcES2015) header ++= Vector("swcES2015-transpilable(%)")
-    if (kFs > 0) header ++= Vector(s"sens-node(#)", s"sens-branch(#)")
-    header ++= Vector("target-conds(#)")
     if (kFs > 0) header ++= Vector(s"sens-target-conds(#)")
     addRow(header)
   private def genStatHeader(keys: List[String], nf: PrintWriter) =
@@ -374,12 +351,6 @@ class Fuzzer(
     val bv = cov.branchViewCov
     val tc = cov.targetCondViews.size
     val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
-    lazy val swcTr = (cov.swcTranspilableRate * 100 * 1000).round / 1000.0
-    lazy val terserTr = (cov.terserTranspilableRate * 100 * 1000).round / 1000.0
-    lazy val swcES2015Tr =
-      (cov.swcES2015TranspilableRate * 100 * 1000).round / 1000.0
-    lazy val babelTr = (cov.babelTranspilableRate * 100 * 1000).round / 1000.0
-
     var row = Vector[Int | Long | String | Double](
       iter,
       e,
@@ -389,11 +360,6 @@ class Fuzzer(
       n,
       b,
     )
-    if (logTranspilable)
-      if (useSwc) row ++= Vector(swcTr)
-      if (useTerser) row ++= Vector(terserTr)
-      if (useBabel) row ++= Vector(babelTr)
-      if (useSwcES2015) row ++= Vector(swcES2015Tr)
     if (kFs > 0) row ++= Vector(nv, bv)
     row ++= Vector(tc)
     if (kFs > 0) row ++= Vector(tcv)
@@ -417,10 +383,4 @@ class Fuzzer(
   private lazy val mutStatTsv: PrintWriter = getPrintWriter(
     s"$logDir/mutation-stat.tsv",
   )
-
-  // ---------------------------------------------------------------------------
-  private lazy val useSwc = transpiler.exists(_.contains("swc"))
-  private lazy val useTerser = transpiler.exists(_.contains("terser"))
-  private lazy val useBabel = transpiler.exists(_.contains("babel"))
-  private lazy val useSwcES2015 = transpiler.exists(_.contains("swcES2015"))
 }
