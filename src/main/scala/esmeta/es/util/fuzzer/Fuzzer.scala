@@ -39,6 +39,8 @@ object Fuzzer {
     duration,
     kFs,
     cp,
+    logTranspilable,
+    transpiler,
   ).result
 
   // debugging levels
