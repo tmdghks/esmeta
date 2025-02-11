@@ -131,26 +131,38 @@ class Coverage(
           update(condView, nearest, script); updated = true
         case _ =>
 
-    lazy val isSwcTranspilableFuture = Future {
-      JSTrans.checkTranspileDiffSrv(code, Some("swc"))
+    val codeWithUseStrict = USE_STRICT + code + LINE_SEP
+
+    val isSwcTranspilableFuture = Future {
+      if (useSwc)
+        JSTrans.checkTranspileDiffSrv(code, Some("swc"))
+      else
+        false
     }
 
-    lazy val isTerserTranspilableFuture = Future {
-      JSTrans.checkTranspileDiffSrv(code, Some("terser"))
+    val isTerserTranspilableFuture = Future {
+      if (useTerser)
+        JSTrans.checkTranspileDiffSrv(code, Some("terser"))
+      else
+        false
     }
 
-    lazy val isSwcES2015TranspilableFuture = Future {
-      JSTrans.checkTranspileDiffSrv(code, Some("swcES2015"))
+    val isSwcES2015TranspilableFuture = Future {
+      if (useSwcES2015)
+        JSTrans.checkTranspileDiffSrv(code, Some("swcES2015"))
+      else
+        false
     }
 
-    lazy val isBabelTranspilableFuture = Future {
-      JSTrans.checkTranspileDiffSrv(code, Some("babel"))
+    val isBabelTranspilableFuture = Future {
+      if (useBabel)
+        JSTrans.checkTranspileDiffSrv(code, Some("babel"))
+      else
+        false
     }
 
     // update script info
     if (updated)
-      val codeWithUseStrict = USE_STRICT + code + LINE_SEP
-
       val isSwcTranspilable =
         if (useSwc)
           Await.result(isSwcTranspilableFuture, Duration.Inf)
