@@ -12,6 +12,7 @@ import esmeta.ty.AstSingleTy
 import esmeta.util.*
 import esmeta.util.SystemUtils.*
 import io.circe.*, io.circe.syntax.*
+import java.util.concurrent.atomic.AtomicInteger
 import math.Ordering.Implicits.seqOrdering
 
 /** coverage measurement in CFG */
@@ -125,13 +126,18 @@ class Coverage(
   def branchCov: Int = condViewMap.size
   def branchViewCov: Int = condViews.size
 
-  def dumpToWithDetail(baseDir: String, withMsg: Boolean = true): Unit = dumpTo(
+  def dumpToWithDetail(
+    baseDir: String,
+    withMsg: Boolean = true,
+    isEnd: Boolean = false,
+  ): Unit = dumpTo(
     baseDir = baseDir,
     withScripts = true,
     withScriptInfo = true,
     withTargetCondViews = false,
     withUnreachableFuncs = false,
     withMsg = withMsg,
+    isEnd = isEnd,
   )
 
   /** dump results */
@@ -142,6 +148,7 @@ class Coverage(
     withTargetCondViews: Boolean = false,
     withUnreachableFuncs: Boolean = false,
     withMsg: Boolean = true,
+    isEnd: Boolean = false,
   ): Unit =
     mkdir(baseDir)
     lazy val orderedNodeViews = nodeViews.toList.sorted
@@ -176,7 +183,9 @@ class Coverage(
       dumpDir[Script](
         name = if (withMsg) Some("minimal ECMAScript programs") else None,
         iterable = _minimalScripts,
-        dirname = s"$baseDir/minimal",
+        dirname =
+          if (isEnd) then s"$baseDir/minimal"
+          else s"$baseDir/minimal-${minimalLogIndex.getAndIncrement()}",
         getName = _.name,
         getData = USE_STRICT + _.code + LINE_SEP,
         remove = true,
@@ -372,6 +381,8 @@ class Coverage(
 }
 
 object Coverage {
+
+  private val minimalLogIndex = AtomicInteger(0)
 
   /** interpreter */
   class Interp(

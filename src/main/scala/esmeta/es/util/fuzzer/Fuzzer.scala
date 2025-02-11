@@ -100,7 +100,7 @@ class Fuzzer(
     )
     // finish logging
     logInterval.map(_ => {
-      logging
+      logging(true)
       summaryTsv.close
       selStatTsv.close
       mutStatTsv.close
@@ -342,7 +342,7 @@ class Fuzzer(
     addRow(row, tsv)
 
   // logging
-  private def logging: Unit =
+  private def logging(isEnd: Boolean = false): Unit =
     val n = cov.nodeCov
     val b = cov.branchCov
     val e = elapsed
@@ -365,7 +365,7 @@ class Fuzzer(
     if (kFs > 0) row ++= Vector(tcv)
     addRow(row)
     // dump coveragge
-    cov.dumpToWithDetail(logDir, withMsg = (debug == ALL))
+    cov.dumpToWithDetail(logDir, withMsg = (debug == ALL), isEnd)
     // dump selector and mutator stat
     dumpStat(selector.names, selectorStat, selStatTsv)
     dumpStat(mutator.names, mutatorStat, mutStatTsv)
