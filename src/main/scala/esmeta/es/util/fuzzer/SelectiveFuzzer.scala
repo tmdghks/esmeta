@@ -104,7 +104,7 @@ class SelectiveFuzzer(
       val bv = cov.branchViewCov
       val tc = cov.targetCondViews.size
       val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
-      val mr = (cov.minifiableRate * 100 * 1000).round / 1000.0
+      val mr = (cov.transpilableRate * 100 * 1000).round / 1000.0
       var row = Vector(iter, e, t, visited.size, pool.size, n, b, mr)
       val targetFeatureSize = cov.targetFeatSet.targetFeatureSize
       row ++= Vector(targetFeatureSize)

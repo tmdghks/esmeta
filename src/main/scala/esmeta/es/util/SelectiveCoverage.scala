@@ -35,7 +35,7 @@ class SelectiveCoverage(
 
   var targetFeatSet = new TargetFeatureSet(selectiveConfig)
 
-  def minifiableRate: Double = minimalInfo.values.count(scriptInfo =>
+  def transpilableRate: Double = minimalInfo.values.count(scriptInfo =>
     (selectiveConfig.targetTrans match
       case "swc"       => scriptInfo.swcTranspilable
       case "babel"     => scriptInfo.babelTranspilable
@@ -43,6 +43,13 @@ class SelectiveCoverage(
       case "swcES2015" => scriptInfo.swcES2015Transpilable
       case _           => None
     ).getOrElse(false),
+  ) / _minimalInfo.values.count(scriptInfo =>
+    (selectiveConfig.targetTrans match
+      case "swc"       => scriptInfo.swcTranspilable.isDefined
+      case "babel"     => scriptInfo.babelTranspilable.isDefined
+      case "terser"    => scriptInfo.terserTranspilable.isDefined
+      case "swcES2015" => scriptInfo.swcES2015Transpilable.isDefined
+      case _           => false),
   )
 
   override def check(
@@ -54,14 +61,14 @@ class SelectiveCoverage(
     val isTranspilerHitFuture = Future {
       selectiveConfig.targetTrans match
         case "swc" =>
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("swc"))
+          JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("swc"))
         case "babel" =>
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("babel"))
+          JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("babel"))
         case "terser" =>
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("terser"))
+          JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("terser"))
         case "swcES2015" =>
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("swc2015"))
-        case _ => false
+          JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("swc2015"))
+        case _ => None
     }
 
     val initSt =
@@ -119,10 +126,14 @@ class SelectiveCoverage(
           update(condView, nearest, script); updated = true
         case _ =>
 
-    val isTranspilerHit = Await.result(isTranspilerHitFuture, 10.seconds)
+    val isTranspilerHitOpt = Await.result(isTranspilerHitFuture, 10.seconds)
 
-    if isTranspilerHit then targetFeatSet.touchWithHit(rawStacks)
-    else targetFeatSet.touchWithMiss(rawStacks)
+    isTranspilerHitOpt match
+      case Some(true) =>
+        targetFeatSet.touchWithHit(rawStacks)
+      case Some(false) =>
+        targetFeatSet.touchWithMiss(rawStacks)
+      case _ => ()
 
     // update script info
     if (updated)
@@ -131,17 +142,16 @@ class SelectiveCoverage(
         interp.touchedNodeViews.map(_._1),
         interp.touchedCondViews.map(_._1),
         swcTranspilable =
-          if selectiveConfig.targetTrans == "swc" then Some(isTranspilerHit)
+          if selectiveConfig.targetTrans == "swc" then isTranspilerHitOpt
           else None,
         terserTranspilable =
-          if selectiveConfig.targetTrans == "terser" then Some(isTranspilerHit)
+          if selectiveConfig.targetTrans == "terser" then isTranspilerHitOpt
           else None,
         swcES2015Transpilable =
-          if selectiveConfig.targetTrans == "swcES2015" then
-            Some(isTranspilerHit)
+          if selectiveConfig.targetTrans == "swcES2015" then isTranspilerHitOpt
           else None,
         babelTranspilable =
-          if selectiveConfig.targetTrans == "babel" then Some(isTranspilerHit)
+          if selectiveConfig.targetTrans == "babel" then isTranspilerHitOpt
           else None,
       )
     // assert: _minimalScripts ~= _minimalInfo.keys
