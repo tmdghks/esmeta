@@ -267,7 +267,7 @@ class Fuzzer(
   // private helpers
   // ---------------------------------------------------------------------------
   // current iteration count
-  private var iter: Int = 0
+  protected var iter: Int = 0
 
   // current id
   private var idCounter: Long = 0
@@ -275,7 +275,7 @@ class Fuzzer(
 
   // evaluation start time
   private var startTime: Long = 0L
-  private def elapsed: Long = System.currentTimeMillis - startTime
+  protected def elapsed: Long = System.currentTimeMillis - startTime
   private def timeout = duration.fold(false)(_ * 1000 < elapsed)
   private var startInterval: Long = 0L
   private def interval: Long = System.currentTimeMillis - startInterval
@@ -284,7 +284,7 @@ class Fuzzer(
   private def toScript(code: String): Script = Script(code, s"$nextId.js")
 
   // check if the added code is visited
-  private var visited: Set[String] = Set()
+  protected var visited: Set[String] = Set()
 
   // indicating that add failed
   private def fail(msg: String) = throw Exception(msg)
@@ -327,7 +327,7 @@ class Fuzzer(
     addRow(header2, nf)
 
   // dump selector and mutator stat
-  private def dumpStat(
+  protected def dumpStat(
     keys: List[String],
     stat: MMap[String, Counter],
     tsv: PrintWriter,
@@ -342,7 +342,7 @@ class Fuzzer(
     addRow(row, tsv)
 
   // logging
-  private def logging(isEnd: Boolean = false): Unit =
+  protected def logging(isEnd: Boolean = false): Unit =
     val n = cov.nodeCov
     val b = cov.branchCov
     val e = elapsed
@@ -369,7 +369,10 @@ class Fuzzer(
     // dump selector and mutator stat
     dumpStat(selector.names, selectorStat, selStatTsv)
     dumpStat(mutator.names, mutatorStat, mutStatTsv)
-  private def addRow(data: Iterable[Any], nf: PrintWriter = summaryTsv): Unit =
+  protected def addRow(
+    data: Iterable[Any],
+    nf: PrintWriter = summaryTsv,
+  ): Unit =
     val row = data.mkString("\t")
     if (stdOut) println(row)
     nf.println(row)
@@ -377,10 +380,10 @@ class Fuzzer(
   private lazy val summaryTsv: PrintWriter = getPrintWriter(
     s"$logDir/summary.tsv",
   )
-  private lazy val selStatTsv: PrintWriter = getPrintWriter(
+  protected lazy val selStatTsv: PrintWriter = getPrintWriter(
     s"$logDir/selector-stat.tsv",
   )
-  private lazy val mutStatTsv: PrintWriter = getPrintWriter(
+  protected lazy val mutStatTsv: PrintWriter = getPrintWriter(
     s"$logDir/mutation-stat.tsv",
   )
 }

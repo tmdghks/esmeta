@@ -30,7 +30,8 @@ class Coverage(
   private var _minimalScripts: Set[Script] = Set()
 
   // meta-info of each script
-  private var _minimalInfo: Map[String, ScriptInfo] = Map()
+  def minimalInfo = _minimalInfo
+  protected var _minimalInfo: Map[String, ScriptInfo] = Map()
 
   // the number of minimal scripts
   def size: Int = counter.size
@@ -277,13 +278,13 @@ class Coverage(
   // private helpers
   // ---------------------------------------------------------------------------
   // update mapping from nodes to scripts
-  private def update(nodeView: NodeView, script: Script): Unit =
+  protected def update(nodeView: NodeView, script: Script): Unit =
     nodeViews += nodeView
     val NodeView(node, view) = nodeView
     nodeViewMap += node -> updated(apply(node), view, script)
 
   // update mapping from conditional branches to scripts
-  private def update(
+  protected def update(
     condView: CondView,
     nearest: Option[Nearest],
     script: Script,
@@ -424,7 +425,7 @@ object Coverage {
       super.returnIfAbrupt(riaExpr, value, check)
 
     // get syntax-sensitive views
-    private def getView: View =
+    protected def getView: View =
       val stack = st.context.featureStack.take(kFs)
       val path = if (cp) then Some(st.context.callPath) else None
       stack match {
