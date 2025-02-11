@@ -14,6 +14,9 @@ import esmeta.util.SystemUtils.*
 import io.circe.*, io.circe.syntax.*
 import math.Ordering.Implicits.seqOrdering
 import esmeta.es.JSTrans
+import scala.concurrent.{Future, Await}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 /** coverage measurement in CFG */
 class Coverage(
@@ -128,28 +131,44 @@ class Coverage(
           update(condView, nearest, script); updated = true
         case _ =>
 
+    lazy val isSwcTranspilableFuture = Future {
+      JSTrans.checkTranspileDiffSrv(code, Some("swc"))
+    }
+
+    lazy val isTerserTranspilableFuture = Future {
+      JSTrans.checkTranspileDiffSrv(code, Some("terser"))
+    }
+
+    lazy val isSwcES2015TranspilableFuture = Future {
+      JSTrans.checkTranspileDiffSrv(code, Some("swcES2015"))
+    }
+
+    lazy val isBabelTranspilableFuture = Future {
+      JSTrans.checkTranspileDiffSrv(code, Some("babel"))
+    }
+
     // update script info
     if (updated)
       val codeWithUseStrict = USE_STRICT + code + LINE_SEP
 
       val isSwcTranspilable =
         if (useSwc)
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("swc"))
+          Await.result(isSwcTranspilableFuture, Duration.Inf)
         else
           false
       val isTerserTranspilable =
         if (useTerser)
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("terser"))
+          Await.result(isTerserTranspilableFuture, Duration.Inf)
         else
           false
       val isSwcES2015Transpilable =
         if (useSwcES2015)
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("swcES2015"))
+          Await.result(isSwcES2015TranspilableFuture, Duration.Inf)
         else
           false
       val isBabelTranspilable =
         if (useBabel)
-          JSTrans.checkTranspileDiffSrv(codeWithUseStrict, Some("babel"))
+          Await.result(isBabelTranspilableFuture, Duration.Inf)
         else
           false
 

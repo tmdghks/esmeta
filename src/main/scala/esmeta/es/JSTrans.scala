@@ -123,7 +123,15 @@ object JSTrans {
 }
 
 object JSTransServer {
-  val serverUrl = "http://127.0.0.1:8282/"
+  private def serverUrl(port: Int = 8282): String =
+    s"http://127.0.0.1:$port/"
+
+  val portMap = Map(
+    "swc" -> 8282,
+    "terser" -> 8283,
+    "babel" -> 8284,
+    "swcES2015" -> 8285,
+  )
   val backend = DefaultSyncBackend()
 
   def queryDiff(code: String, cmd: Option[String]): String = {
@@ -143,8 +151,9 @@ object JSTransServer {
       case Some("swcES2015") | Some("SwcES2015") =>
         "&notcompress=true&target=es2015"
       case _ => ""
+    val serverUrlWithPort = serverUrl(portMap(cmd.getOrElse("swc")))
     val url =
-      s"$serverUrl?codeOrFilePath=$encodedCode&version=$version&diff=true" + additionalOptions
+      s"$serverUrlWithPort?codeOrFilePath=$encodedCode&version=$version&diff=true" + additionalOptions
     val request = basicRequest.get(uri"$url")
 
     val response = request.send(backend)
