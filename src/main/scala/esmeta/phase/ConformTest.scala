@@ -60,9 +60,14 @@ case object ConformTest extends Phase[CFG, Unit] {
         reason <- engine.run(injected) match
           case Success(msg) if msg.isEmpty =>
             if (isNormal) None
-            else Some("Should have thrown an exception")
+            else Some("Transpiled Program Should have thrown an exception")
           case Success(msg) => Some(msg)
-          case Failure(e)   => Some(e.getMessage)
+          case Failure(e) =>
+            if (isNormal)
+              Some(
+                s"Transpiled Program Should Run Normally\nTranspiled Program Exception: ${e.getMessage}",
+              )
+            else None
       } log(logDir, name, i, code, transpiled, injected, reason)
     }
     val bugCount: Int = bugIndexCounter.get
@@ -161,7 +166,7 @@ case object ConformTest extends Phase[CFG, Unit] {
     val count = bugIndexCounter.incrementAndGet()
     val dirpath = s"$logDir/$count"
     mkdir(dirpath)
-    dumpFile(transpiled, s"$dirpath/minified.js")
+    dumpFile(transpiled, s"$dirpath/transpiled.js")
     dumpFile(injected, s"$dirpath/injected.js")
     dumpFile(original, s"$dirpath/original.js")
     dumpFile(reason, s"$dirpath/reason")
