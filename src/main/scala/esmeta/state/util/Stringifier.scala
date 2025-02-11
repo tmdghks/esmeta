@@ -32,6 +32,9 @@ class Stringifier(detail: Boolean, location: Boolean) {
       case elem: Obj         => objRule(app, elem)
       case elem: Value       => valueRule(app, elem)
       case elem: RefTarget   => refTargetRule(app, elem)
+      case elem: Feature     => featureRule(app, elem)
+      case elem: CallGraph   => callGraphRule(app, elem)
+      case elem: CallPath    => callPathRule(app, elem)
 
   // states
   given stRule: Rule[State] = (app, st) =>
@@ -176,4 +179,25 @@ class Stringifier(detail: Boolean, location: Boolean) {
       case FieldTarget(base, Str(inlineField(str))) => app >> base >> "." >> str
       case FieldTarget(base, field) => app >> base >> "[" >> field >> "]"
     }
+
+  // syntax directed operation information
+  given featureRule: Rule[Feature] = (app, feature) =>
+    val irFunc = feature.func.irFunc
+    app >> irFunc.kind >> irFunc.name
+
+  // abstraction of call stack as graph
+  given callGraphRule: Rule[CallGraph] = (app, graph) =>
+    val CallGraph(start, edges, end) = graph
+    given Rule[Call] = (app, call) => app >> call.id
+    app >> "CallGraph[" >> start
+    if (!edges.isEmpty)
+      given Rule[Iterable[(Call, Call)]] = iterableRule("{", ", ", "}")
+      app >> " -> " >> edges.toList.sortBy(_._1.id) >> " -> " >> end
+    app >> "]"
+
+  // abstraction of call stack as simple path
+  given callPathRule: Rule[CallPath] = (app, path) =>
+    given Rule[Call] = (app, call) => app >> call.id
+    given Rule[Iterable[Call]] = iterableRule("[", " <- ", "]")
+    app >> "CallPath" >> path.path
 }
