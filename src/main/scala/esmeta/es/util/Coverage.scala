@@ -166,18 +166,20 @@ class Coverage(
     def log(msg: Any) =
       if (withMsg) println(s"[$elapsedSec s] $msg")
 
-    dumpJson(
-      name = if (withMsg) Some("node coverage") else None,
-      data = nodeViewInfos(orderedNodeViews),
-      filename = s"$baseDir/node-coverage.json",
+    dumpJsonChunks(
+      name = "node coverage",
+      iterable = nodeViewInfos(orderedNodeViews),
+      filename = s"$baseDir/node-coverage-chunks.json",
       space = true,
+      chunkSize = 40000,
     )
-    log("Dupmed node coverage")
-    dumpJson(
-      name = if (withMsg) Some("branch coverage") else None,
-      data = condViewInfos(orderedCondViews),
-      filename = s"$baseDir/branch-coverage.json",
+    log("Dumped node coverage")
+    dumpJsonChunks(
+      name = "branch coverage",
+      iterable = condViewInfos(orderedCondViews),
+      filename = s"$baseDir/branch-coverage-chunks.json",
       space = true,
+      chunkSize = 40000,
     )
     log("Dupmed branch coverage")
     if (withScripts)
