@@ -76,6 +76,17 @@ class Fuzzer(
       genStatHeader(mutator.names, mutStatTsv)
     })
     val size = initPool.size
+
+    if logTranspilable then
+      debugging(s"- logging transpilable: $logTranspilable - ")
+      debugging(
+        s" transpiler: ${transpiler.map(_.mkString(", ")).getOrElse("None")}",
+      )
+      debugging("useSwc: " + useSwc)
+      debugging("useTerser: " + useTerser)
+      debugging("useBabel: " + useBabel)
+      debugging("useSwcES2015: " + useSwcES2015)
+
     time(
       s"- initializing program pool with ${initPool.size} programs", {
         for {

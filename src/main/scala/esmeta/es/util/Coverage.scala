@@ -60,7 +60,7 @@ class Coverage(
 
   lazy val useSwc = transpiler.exists(_.contains("swc"))
   lazy val useTerser = transpiler.exists(_.contains("terser"))
-  lazy val useSwcES2015 = transpiler.exists(_.contains("swc2015"))
+  lazy val useSwcES2015 = transpiler.exists(_.contains("swcES2015"))
   lazy val useBabel = transpiler.exists(_.contains("babel"))
 
   def swcTranspilableRate = _minimalInfo.values.count(
