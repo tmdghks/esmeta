@@ -153,3 +153,11 @@ case object CmdFuzz extends Command("fuzz", CmdBuildCFG >> Fuzz) {
     println(s"- generated ${cov.size} JavaScript programs.")
     println(cov)
 }
+
+case object CmdConformTest
+  extends Command("conform-test", CmdBuildCFG >> ConformTest) {
+  val help = "conformance test."
+  val examples = List(
+    "esmeta conform-test log-dir -conform-test:out=out.json",
+  )
+}

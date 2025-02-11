@@ -25,6 +25,34 @@ object JSEngine {
     "node" -> "node --unhandled-rejections=none -e", // node.js
   )
 
+  def apply(name: String): Engine = name match
+    case "d8"   => Engine.D8
+    case "js"   => Engine.Js
+    case "node" => Engine.Node
+    case _      => Engine.Graal
+
+  /** JavaScript engines */
+  enum Engine:
+    case Graal, D8, Js, Node
+    val run: String => Try[String] = runWithTimeout(_, None)
+    val runWithTimeout: (String, Option[Int]) => Try[String] = this match
+      case Graal => runGraal(_, _)
+      case D8    => runD8(_, _)
+      case Js    => runJs(_, _)
+      case Node  => runNode(_, _)
+
+  /** default engine */
+  val default: Option[Engine] =
+    import Engine.*
+    if (JSEngine.useGraal) Some(Graal)
+    else if (JSEngine.useD8) Some(D8)
+    else if (JSEngine.useJs) Some(Js)
+    else if (JSEngine.useNode) Some(Node)
+    else {
+      warn("No JSEngine available. this may pass invalid program.")
+      None
+    }
+
   /** Check if GraalVM polyglot API can be used */
   lazy val useGraal: Boolean =
     try
