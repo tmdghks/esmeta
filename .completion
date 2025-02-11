@@ -20,7 +20,7 @@ _esmeta_completions() {
   parseOpt="-parse:debug"
   evalOpt="-eval:timeout -eval:multiple -eval:log -eval:detail-log"
   test262testOpt="-test262-test:target -test262-test:features -test262-test:progress -test262-test:coverage -test262-test:timeout -test262-test:with-yet -test262-test:log -test262-test:k-fs -test262-test:cp -test262-test:concurrent -test262-test:verbose"
-  fuzzOpt="-fuzz:log-interval -fuzz:debug -fuzz:timeout -fuzz:trial -fuzz:duration -fuzz:seed -fuzz:k-fs -fuzz:cp"
+  fuzzOpt="-fuzz:log-interval -fuzz:log-transpilable -fuzz:transpiler -fuzz:debug -fuzz:timeout -fuzz:trial -fuzz:duration -fuzz:seed -fuzz:k-fs -fuzz:cp"
   # completion for commands
   case "${COMP_CWORD}" in
     1)

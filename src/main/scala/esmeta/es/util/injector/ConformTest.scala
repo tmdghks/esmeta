@@ -132,7 +132,7 @@ object ConformTest {
   /** Create a pair of tests using code string */
   def createTestPair(script: String): (ConformTest, ConformTest) =
     val engineScript = USE_STRICT + script
-    val transpiled = JSTrans.transpile(engineScript)
+    val transpiled = JSTrans.transpile(engineScript).getOrElse("")
     val injectedTest = Injector(script, true)
     val engineTest = injectedTest.replaceScript(engineScript)
     val transpiledTest = engineTest.filterAssertion.replaceScript(transpiled)
