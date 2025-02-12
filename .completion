@@ -20,7 +20,7 @@ _esmeta_completions() {
   parseOpt="-parse:debug"
   evalOpt="-eval:timeout -eval:multiple -eval:log -eval:detail-log"
   test262testOpt="-test262-test:target -test262-test:features -test262-test:progress -test262-test:coverage -test262-test:timeout -test262-test:with-yet -test262-test:log -test262-test:k-fs -test262-test:cp -test262-test:concurrent -test262-test:verbose"
-  fuzzOpt="-fuzz:log-interval -fuzz:log-transpilable -fuzz:transpiler -fuzz:debug -fuzz:timeout -fuzz:trial -fuzz:duration -fuzz:seed -fuzz:k-fs -fuzz:cp"
+  fuzzOpt="-fuzz:log-interval -fuzz:debug -fuzz:timeout -fuzz:trial -fuzz:duration -fuzz:seed -fuzz:k-fs -fuzz:cp"
   selectivefuzzOpt="-selective-fuzz:log-interval -selective-fuzz:log-transpilable -selective-fuzz:target-trans -selective-fuzz:debug -selective-fuzz:timeout -selective-fuzz:trial -selective-fuzz:duration -selective-fuzz:seed -selective-fuzz:max-k -selective-fuzz:cp -selective-fuzz:pro-alpha -selective-fuzz:dem-alpha"
   conformtestOpt="-conform-test:out -conform-test:transpiler -conform-test:debug"
   # completion for commands

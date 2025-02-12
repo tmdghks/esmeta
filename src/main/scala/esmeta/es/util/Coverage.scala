@@ -444,6 +444,7 @@ object Coverage {
     test: ConformTest,
     touchedNodeViews: Iterable[NodeView],
     touchedCondViews: Iterable[CondView],
+    transpilable: Option[Boolean] = None,
   )
 
   /* syntax-sensitive views */

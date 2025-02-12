@@ -259,8 +259,8 @@ class Fuzzer(
   val initPool =
     (
       SimpleSynthesizer.initPool.map(SimpleSynthesizer -> _) ++
-        BuiltinSynthesizer.initPool.map(BuiltinSynthesizer -> _)
-    ).take(10)
+      BuiltinSynthesizer.initPool.map(BuiltinSynthesizer -> _)
+    )
 
   lazy val logDir: String = s"$FUZZ_LOG_DIR/fuzz-$dateStr"
   lazy val symlink: String = s"$FUZZ_LOG_DIR/recent"

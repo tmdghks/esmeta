@@ -93,7 +93,7 @@ class SelectiveFuzzer(
     )
 
     // TODO: Modify logging with TargetFeatureSet
-    override def logging: Unit =
+    override def logging(isEnd: Boolean = false): Unit =
       val startTime = System.currentTimeMillis
 
       val n = cov.nodeCov

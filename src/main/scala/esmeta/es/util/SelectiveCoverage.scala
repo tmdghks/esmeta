@@ -29,28 +29,13 @@ class SelectiveCoverage(
     timeLimit,
     selectiveConfig.maxSensitivity,
     cp,
-    false,
-    None,
   ) {
 
   var targetFeatSet = new TargetFeatureSet(selectiveConfig)
 
-  def transpilableRate: Double = minimalInfo.values.count(scriptInfo =>
-    (selectiveConfig.targetTrans match
-      case "swc"       => scriptInfo.swcTranspilable
-      case "babel"     => scriptInfo.babelTranspilable
-      case "terser"    => scriptInfo.terserTranspilable
-      case "swcES2015" => scriptInfo.swcES2015Transpilable
-      case _           => None
-    ).getOrElse(false),
-  ) / _minimalInfo.values.count(scriptInfo =>
-    (selectiveConfig.targetTrans match
-      case "swc"       => scriptInfo.swcTranspilable.isDefined
-      case "babel"     => scriptInfo.babelTranspilable.isDefined
-      case "terser"    => scriptInfo.terserTranspilable.isDefined
-      case "swcES2015" => scriptInfo.swcES2015Transpilable.isDefined
-      case _           => false),
-  )
+  def transpilableRate: Double =
+    minimalInfo.values.count(_.transpilable.getOrElse(false))
+    / _minimalInfo.values.count(_.transpilable.isDefined)
 
   override def check(
     script: Script,
@@ -141,18 +126,7 @@ class SelectiveCoverage(
         ConformTest.createTest(initSt, finalSt),
         interp.touchedNodeViews.map(_._1),
         interp.touchedCondViews.map(_._1),
-        swcTranspilable =
-          if selectiveConfig.targetTrans == "swc" then isTranspilerHitOpt
-          else None,
-        terserTranspilable =
-          if selectiveConfig.targetTrans == "terser" then isTranspilerHitOpt
-          else None,
-        swcES2015Transpilable =
-          if selectiveConfig.targetTrans == "swcES2015" then isTranspilerHitOpt
-          else None,
-        babelTranspilable =
-          if selectiveConfig.targetTrans == "babel" then isTranspilerHitOpt
-          else None,
+        transpilable = isTranspilerHitOpt,
       )
     // assert: _minimalScripts ~= _minimalInfo.keys
 
@@ -160,11 +134,12 @@ class SelectiveCoverage(
 
   override def dumpTo(
     baseDir: String,
-    withScripts: Boolean,
-    withScriptInfo: Boolean,
-    withTargetCondViews: Boolean,
-    withUnreachableFuncs: Boolean,
-    withMsg: Boolean,
+    withScripts: Boolean = false,
+    withScriptInfo: Boolean = false,
+    withTargetCondViews: Boolean = false,
+    withUnreachableFuncs: Boolean = false,
+    withMsg: Boolean = true,
+    isEnd: Boolean = false,
   ): Unit =
     super.dumpTo(
       baseDir,
@@ -173,6 +148,7 @@ class SelectiveCoverage(
       withTargetCondViews,
       withUnreachableFuncs,
       withMsg,
+      isEnd = true,
     )
     val st = System.nanoTime()
     def elapsedSec = (System.nanoTime() - st) / 1000000 / 1e3
