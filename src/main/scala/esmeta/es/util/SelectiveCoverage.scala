@@ -34,8 +34,8 @@ class SelectiveCoverage(
   var targetFeatSet = new TargetFeatureSet(selectiveConfig)
 
   def transpilableRate: Double =
-    minimalInfo.values.count(_.transpilable.getOrElse(false))
-    / _minimalInfo.values.count(_.transpilable.isDefined)
+    _minimalInfo.values.count(_.transpilable.getOrElse(false))
+    / _minimalInfo.values.count(_.transpilable.isDefined).toDouble
 
   override def check(
     script: Script,

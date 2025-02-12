@@ -99,6 +99,8 @@ case class TargetFeatureSet(
 
   def targetFeatureSize: Int =
     targetFeatureMap.filter(_._2.status == TargetFeatureStatus.Noticed).size
+  def touchedFeatureSize: Int =
+    targetFeatureMap.size
 
 }
 

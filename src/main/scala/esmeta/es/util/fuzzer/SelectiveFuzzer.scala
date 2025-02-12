@@ -92,8 +92,31 @@ class SelectiveFuzzer(
       selectiveConfig = selectiveConfig,
     )
 
-    // TODO: Modify logging with TargetFeatureSet
-    override def logging(isEnd: Boolean = false): Unit =
+    override protected def genSummaryHeader: Unit =
+      var header = Vector(
+        "iter(#)",
+        "time(ms)",
+        "time(h:m:s)",
+        "program(#)",
+        "minimal(#)",
+        "node(#)",
+        "branch(#)",
+        "transpilable(%)",
+        "target-feature(#)",
+        "touched-feature(#)",
+      )
+      if (selectiveConfig.maxSensitivity > 0)
+        header ++= Vector(
+          "node-view(#)",
+          "branch-view(#)",
+        )
+      header ++= Vector("target-conds(#)")
+      if (selectiveConfig.maxSensitivity > 0)
+        header ++= Vector(s"sens-target-conds(#)")
+      addRow(header)
+
+    override protected def logging(isEnd: Boolean): Unit =
+      println("selective logging")
       val startTime = System.currentTimeMillis
 
       val n = cov.nodeCov
@@ -105,9 +128,11 @@ class SelectiveFuzzer(
       val tc = cov.targetCondViews.size
       val tcv = cov.targetCondViews.map(_._2.size).fold(0)(_ + _)
       val mr = (cov.transpilableRate * 100 * 1000).round / 1000.0
+      print(mr)
       var row = Vector(iter, e, t, visited.size, pool.size, n, b, mr)
       val targetFeatureSize = cov.targetFeatSet.targetFeatureSize
-      row ++= Vector(targetFeatureSize)
+      val touchedFeatureSize = cov.targetFeatSet.touchedFeatureSize
+      row ++= Vector(targetFeatureSize, touchedFeatureSize)
       if (selectiveConfig.maxSensitivity > 0) row ++= Vector(nv, bv)
       row ++= Vector(tc)
       if (selectiveConfig.maxSensitivity > 0) row ++= Vector(tcv)

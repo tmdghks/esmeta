@@ -91,7 +91,7 @@ class Fuzzer(
         logInterval.map(_ => {
           startTime = System.currentTimeMillis
           startInterval = System.currentTimeMillis
-          logging
+          logging()
         })
         trial match
           case Some(count) => for (_ <- Range(0, count)) if (!timeout) fuzz
@@ -117,7 +117,7 @@ class Fuzzer(
     for (bound <- logInterval) {
       val seconds = bound * 1000
       if (interval > seconds) {
-        if (debug == NO_DEBUG) logging else time("Logging", logging)
+        if (debug == NO_DEBUG) logging() else time("Logging", logging())
         startInterval += seconds
       }
     }
@@ -257,10 +257,8 @@ class Fuzzer(
 
   /** initial pool */
   val initPool =
-    (
-      SimpleSynthesizer.initPool.map(SimpleSynthesizer -> _) ++
-      BuiltinSynthesizer.initPool.map(BuiltinSynthesizer -> _)
-    )
+    SimpleSynthesizer.initPool.map(SimpleSynthesizer -> _) ++
+    BuiltinSynthesizer.initPool.map(BuiltinSynthesizer -> _)
 
   lazy val logDir: String = s"$FUZZ_LOG_DIR/fuzz-$dateStr"
   lazy val symlink: String = s"$FUZZ_LOG_DIR/recent"
@@ -306,7 +304,7 @@ class Fuzzer(
   private def debugFlush: Unit = { print(debugMsg); debugClean }
 
   // generate headers
-  private def genSummaryHeader =
+  protected def genSummaryHeader =
     var header = Vector(
       "iter(#)",
       "time(ms)",
@@ -316,6 +314,8 @@ class Fuzzer(
       "node(#)",
       "branch(#)",
     )
+    if (kFs > 0) header ++= Vector(s"sens-node(#)", s"sens-branch(#)")
+    header ++= Vector("target-conds(#)")
     if (kFs > 0) header ++= Vector(s"sens-target-conds(#)")
     addRow(header)
   private def genStatHeader(keys: List[String], nf: PrintWriter) =
@@ -366,7 +366,7 @@ class Fuzzer(
     row ++= Vector(tc)
     if (kFs > 0) row ++= Vector(tcv)
     addRow(row)
-    // dump coveragge
+    // dump coverage
     cov.dumpToWithDetail(logDir, withMsg = (debug == ALL), isEnd)
     // dump selector and mutator stat
     dumpStat(selector.names, selectorStat, selStatTsv)
