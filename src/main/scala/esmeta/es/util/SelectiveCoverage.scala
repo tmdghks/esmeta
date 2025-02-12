@@ -52,7 +52,7 @@ class SelectiveCoverage(
         case "terser" =>
           JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("terser"))
         case "swcES2015" =>
-          JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("swc2015"))
+          JSTrans.checkTranspileDiffSrvOpt(codeWithUseStrict, Some("swcES2015"))
         case _ => None
     }
 
