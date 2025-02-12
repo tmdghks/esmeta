@@ -116,11 +116,11 @@ class Injector(
   }
 
   // get created variables
-  private lazy val globalMap = "@REALM.GlobalObject.SubMap"
+  private lazy val globalMap = "@REALM.GlobalObject.__MAP__"
   private lazy val globalThis =
     getValue(s"$globalMap.globalThis.Value")
   private lazy val createdVars: Set[String] =
-    val initial = getStrKeys(getValue("@GLOBAL.SubMap"), "<global>")
+    val initial = getStrKeys(getValue("@GLOBAL.__MAP__"), "<global>")
     val current = getStrKeys(getValue(globalMap), "<global>")
     (current -- initial)
 
@@ -223,7 +223,7 @@ class Injector(
 
   private def handleProperty(addr: Addr, path: String): Unit =
     log(s"handleProperty: $addr, $path")
-    val subMap = access(addr, Str("SubMap"))
+    val subMap = access(addr, Str("__MAP__"))
     for (p <- getKeys(subMap, path)) access(subMap, p) match
       case addr: Addr =>
         exitSt(addr) match
@@ -276,7 +276,7 @@ class Injector(
 
   // get created lexical variables
   private lazy val lexRecord =
-    "@REALM.GlobalEnv.DeclarativeRecord.SubMap"
+    "@REALM.GlobalEnv.DeclarativeRecord.__MAP__"
   private lazy val createdLets: Set[String] =
     getStrKeys(getValue(lexRecord), "<global-decl-record>")
 
@@ -287,9 +287,9 @@ class Injector(
   private def getKeys(value: Value, path: String): Set[PureValue] = value match
     case addr: Addr =>
       exitSt(addr) match
-        case m: RecordObj => m.map.keySet.map(Str(_)).toSet
-        case _ => warning("[[SubMap]] is not a map object: $path"); Set()
-    case _ => warning("[[SubMap]] is not an address: $path"); Set()
+        case m: MapObj => m.map.keys.collect { case pv: PureValue => pv }.toSet
+        case _ => warning("[[__MAP__]] is not a map object: $path"); Set()
+    case _ => warning("[[__MAP__]] is not an address: $path"); Set()
 
   // conversion to ECMAScript code
   private def val2str(value: Value): Option[String] = value match
