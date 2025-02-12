@@ -45,13 +45,17 @@ case object ConformTest extends Phase[CFG, Unit] {
     )
     for (pair <- progress) {
       val (Script(code, name), i) = pair
+      val codeWithUseStrict = USE_STRICT + LINE_SEP + code
       val assertion = readFile(s"$assertionDir/$name.js")
       val isNormal = assertion.split(LINE_SEP).head.contains("[EXIT] normal")
       if (nodeEngine.isValid(code)) for {
-        transpiled <- JSTrans.transpile(code, Some(transpiler)) match
+        transpiled <- JSTrans.transpile(
+          codeWithUseStrict,
+          Some(transpiler),
+        ) match
           case Success(t) => Some(t)
           case Failure(e) =>
-            log(logDir, name, i, code, "", "", e.getMessage)
+            log(logDir, name, i, codeWithUseStrict, "", "", e.getMessage)
             None
         injected = {
           if (isNormal) List(prefix, transpiled, wrap(assertion))
@@ -68,7 +72,7 @@ case object ConformTest extends Phase[CFG, Unit] {
                 s"Transpiled Program Should Run Normally\nTranspiled Program Exception: ${e.getMessage}",
               )
             else None
-      } log(logDir, name, i, code, transpiled, injected, reason)
+      } log(logDir, name, i, codeWithUseStrict, transpiled, injected, reason)
     }
     val bugCount: Int = bugIndexCounter.get
     println(s"Total: $totalCount, Bugs: $bugCount")
