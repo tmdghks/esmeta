@@ -47,7 +47,7 @@ case object ConformTest extends Phase[CFG, Unit] {
       val (Script(code, name), i) = pair
       val assertion = readFile(s"$assertionDir/$name.js")
       val isNormal = assertion.split(LINE_SEP).head.contains("[EXIT] normal")
-      for {
+      if (nodeEngine.isValid(code)) for {
         transpiled <- JSTrans.transpile(code, Some(transpiler)) match
           case Success(t) => Some(t)
           case Failure(e) =>
@@ -122,6 +122,7 @@ case object ConformTest extends Phase[CFG, Unit] {
   private lazy val delayTail = "});"
 
   private lazy val engine = JSEngine.default.get
+  private lazy val nodeEngine = JSEngine.Engine.Node
 
   // get code to clear initial global variables
   private lazy val globalClearingCode: String = {

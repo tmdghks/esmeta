@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import org.graalvm.polyglot.*
 import esmeta.LINE_SEP
 import esmeta.error.*
+import esmeta.es.util.*
 import esmeta.util.BaseUtils.*
 import esmeta.util.SystemUtils.*
 import java.util.concurrent.atomic.AtomicReference
@@ -40,6 +41,11 @@ object JSEngine {
       case D8    => runD8(_, _)
       case Js    => runJs(_, _)
       case Node  => runNode(_, _)
+    def isValid(code: String): Boolean =
+      val MESSAGE = "VALIDITY_CHECKER_EXPECTED_EXCEPTION"
+      val src = s"${USE_STRICT}throw \"$MESSAGE\";$LINE_SEP;$LINE_SEP$code"
+      val result = runWithTimeout(src, Some(1))
+      result.failed.filter(_.getMessage contains MESSAGE).isSuccess
 
   /** default engine */
   lazy val default: Option[Engine] =
